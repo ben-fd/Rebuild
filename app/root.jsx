@@ -15,6 +15,7 @@ import {
 import favicon from '../public/favicon.svg';
 import resetStyles from './styles/reset.css';
 import appStyles from './styles/app.css';
+import tailwindCSS from '../public/output.css';
 import {Layout} from '~/components/Layout';
 
 /**
@@ -38,6 +39,7 @@ export const shouldRevalidate = ({formMethod, currentUrl, nextUrl}) => {
 export function links() {
   return [
     {rel: 'stylesheet', href: resetStyles},
+    {rel: 'stylesheet', href: tailwindCSS},
     {rel: 'stylesheet', href: appStyles},
     {
       rel: 'preconnect',
@@ -88,7 +90,7 @@ export async function loader({context}) {
   const headerPromise = storefront.query(HEADER_QUERY, {
     cache: storefront.CacheLong(),
     variables: {
-      headerMenuHandle: 'main-menu', // Adjust to your header menu handle
+      headerMenuHandle: 'mainmenu4_new', // Adjust to your header menu handle
     },
   });
 
@@ -116,6 +118,7 @@ export default function App() {
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <Meta />
         <Links />
+
       </head>
       <body>
         <Layout {...data}>

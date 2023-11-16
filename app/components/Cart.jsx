@@ -45,7 +45,7 @@ function CartDetails({layout, cart}) {
  *   lines: CartApiQueryFragment['lines'] | undefined;
  * }}
  */
-function CartLines({lines, layout}) {
+export function CartLines({lines, layout}) {
   if (!lines) return null;
 
   return (
@@ -71,34 +71,32 @@ function CartLineItem({layout, line}) {
   const lineItemUrl = useVariantUrl(product.handle, selectedOptions);
 
   return (
-    <li key={id} className="cart-line">
+    <li key={id} className="card card-side card-compact bg-white shadow-sm">
       {image && (
-        <Image
-          alt={title}
-          aspectRatio="1/1"
-          data={image}
-          height={100}
-          loading="lazy"
-          width={100}
-        />
+        <figure><Image
+        alt={title}
+        aspectRatio="1/1"
+        data={image}
+        height={100}
+        loading="lazy"
+        width={100}
+      /></figure>
       )}
 
-      <div>
+      <div className="card-body">
         <Link
           prefetch="intent"
           to={lineItemUrl}
+          className="card-title text-sm"
           onClick={() => {
             if (layout === 'aside') {
               // close the drawer
               window.location.href = lineItemUrl;
             }
           }}
-        >
-          <p>
-            <strong>{product.title}</strong>
-          </p>
+        >{product.title}
         </Link>
-        <CartLinePrice line={line} as="span" />
+        {/*<CartLinePrice line={line} as="span" />*/}
         <ul>
           {selectedOptions.map((option) => (
             <li key={option.name}>
@@ -108,6 +106,7 @@ function CartLineItem({layout, line}) {
             </li>
           ))}
         </ul>
+        
         <CartLineQuantity line={line} />
       </div>
     </li>
@@ -184,7 +183,7 @@ function CartLineQuantity({line}) {
   const nextQuantity = Number((quantity + 1).toFixed(0));
 
   return (
-    <div className="cart-line-quantiy">
+    <div className="card-actions justify-end">
       <small>Quantity: {quantity} &nbsp;&nbsp;</small>
       <CartLineUpdateButton lines={[{id: lineId, quantity: prevQuantity}]}>
         <button
@@ -272,36 +271,33 @@ export function CartEmpty({hidden = false, layout = 'aside'}) {
  *   discountCodes: CartApiQueryFragment['discountCodes'];
  * }}
  */
-function CartDiscounts({discountCodes}) {
+export function CartDiscounts({discountCodes}) {
   const codes =
     discountCodes
       ?.filter((discount) => discount.applicable)
       ?.map(({code}) => code) || [];
 
   return (
-    <div>
+    <div className="form-control w-full">
       {/* Have existing discount, display it with a remove option */}
-      <dl hidden={!codes.length}>
+      <dl hidden={!codes.length} className="">
         <div>
-          <dt>Discount(s)</dt>
           <UpdateDiscountForm>
-            <div className="cart-discount">
-              <code>{codes?.join(', ')}</code>
-              &nbsp;
-              <button>Remove</button>
+            <div className="flex gap-2">
+              <button className="btn btn-sm badge-accent">{codes?.join(', ')} <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="inline-block w-4 h-4 stroke-current"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             </div>
           </UpdateDiscountForm>
         </div>
       </dl>
 
       {/* Show an input to apply a discount */}
-      <UpdateDiscountForm discountCodes={codes}>
-        <div>
-          <input type="text" name="discountCode" placeholder="Discount code" />
-          &nbsp;
-          <button type="submit">Apply</button>
+      {!codes.length && (<UpdateDiscountForm discountCodes={codes}>
+        <div className="join w-full">
+          <input type="text" name="discountCode" placeholder="discount code or gift card" className="input input-bordered input-secondary w-full join-item bg-white" />
+          <button type="submit" className="btn join-item">Apply</button>
         </div>
-      </UpdateDiscountForm>
+      </UpdateDiscountForm>)}
+      
     </div>
   );
 }
