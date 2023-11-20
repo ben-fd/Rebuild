@@ -20,12 +20,10 @@ module.exports = {
   },
   content: ["./app/**/*.{html,js,jsx,ts,tsx}"],
   theme: {
-    extend: {
       fontFamily: {
-        'sans' : ["Helvetica Neue"]
+        'sans' : ["'HelveticaNeue'"]
       }
-    },
   },
-  plugins: [require("daisyui")],
+  plugins: [require("daisyui"), require("@tailwindcss/typography")],
 }
 

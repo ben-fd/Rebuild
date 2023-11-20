@@ -2,20 +2,19 @@ import {Await, NavLink} from '@remix-run/react';
 import {Suspense} from 'react';
 import {useRootLoaderData} from '~/root';
 import {Image, Money} from '@shopify/hydrogen';
-import {CartMain, CartDiscounts, CartLines} from '~/components/Cart';
+import {CartMain, CartDiscounts, CartLines, CartDeliveryDate, CartMainPane} from '~/components/Cart';
 import {Link} from '@remix-run/react';
 
 /**
  * @param {HeaderProps}
  */
-export function Header({header, isLoggedIn, cart}) {
+export function Header({header, isLoggedIn, cart, deliveryInfo}) {
   const {shop, menu} = header;
-  console.log(JSON.stringify(shop, null, 2))
   return (
-    <nav className="bg-secondary shadow-xl navbar sticky top-0 md:px-4">
+    <nav className="bg-secondary shadow-xl navbar sticky lg:relative top-0 md:px-4 z-30  lg:h-4">
       <div className="navbar-start">
         <div className="dropdown">
-          <label tabIndex={0} className="btn btn-ghost lg:hidden">
+          <label tabIndex={0} className="btn btn-ghost">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
           </label>
           <HeaderMenu 
@@ -41,8 +40,8 @@ export function Header({header, isLoggedIn, cart}) {
         </div>
       </div>
       
-      <div className="navbar-end hidden lg:flex">
-        <HeaderCtas isLoggedIn={isLoggedIn} cart={cart} />
+      <div className="navbar-end">
+        <HeaderCtas isLoggedIn={isLoggedIn} cart={cart} deliveryInfo={deliveryInfo}/>
       </div>
     </nav>
   );
@@ -86,9 +85,9 @@ export function HeaderMenu({menu, primaryDomainUrl, viewport}) {
         >
           {item.title}
         </NavLink>
-        </li>) : (<li key={viewport + item.id + "parent"}>
-          <details>
-          <summary>
+        </li>) : (<li className="dropdown dropdown-end" key={viewport + item.id + "parent"}>
+          {viewport=="desktop" ?
+          <><label tabIndex={0} className="">
             <NavLink
             end
             onClick={closeAside}
@@ -98,8 +97,7 @@ export function HeaderMenu({menu, primaryDomainUrl, viewport}) {
           >
             {item.title}
           </NavLink>
-          </summary>
-          <ul className="p-2 bg-base-100  shadow-xl">
+          </label> <ul tabIndex={0} className="menu dropdown-content rounded-box p-2 bg-base-100  shadow-xl">
             {item.items.map((subitem) => {
               const subItemUrl = stripURLDomain(subitem, publicStoreDomain, primaryDomainUrl);
               return (<li key={viewport + subitem.id + "child"}><NavLink
@@ -113,8 +111,33 @@ export function HeaderMenu({menu, primaryDomainUrl, viewport}) {
               </NavLink></li>)
             })}
             
-          </ul>
-        </details>
+          </ul></>:<details>
+            <summary>
+              <NavLink
+            end
+            onClick={closeAside}
+            style={activeLinkStyle}
+            to={url}
+            className="lowercase"
+          >
+            {item.title}
+          </NavLink>
+          </summary>
+         <ul tabIndex={0} className="">
+            {item.items.map((subitem) => {
+              const subItemUrl = stripURLDomain(subitem, publicStoreDomain, primaryDomainUrl);
+              return (<li key={viewport + subitem.id + "child"}><NavLink
+                end
+                onClick={closeAside}
+                style={activeLinkStyle}
+                to={subItemUrl}
+                className="lowercase"
+              >
+                {subitem.title}
+              </NavLink></li>)
+            })}
+            
+          </ul></details>}
         </li>)
       })}
       </ul>
@@ -132,14 +155,14 @@ function stripURLDomain(item, publicStoreDomain, primaryDomainUrl){
 /**
  * @param {Pick<HeaderProps, 'isLoggedIn' | 'cart'>}
  */
-function HeaderCtas({isLoggedIn, cart}) {
+function HeaderCtas({isLoggedIn, cart, deliveryInfo}) {
   return (
     <nav className="header-ctas" role="navigation">
       <NavLink className="lowercase" prefetch="intent" to="/account" style={activeLinkStyle}>
         {isLoggedIn ? 'Account' : 'Sign in'}
       </NavLink>
       <SearchToggle />
-      <CartToggle cart={cart} />
+      <CartToggle cart={cart} deliveryInfo={deliveryInfo}/>
     </nav>
   );
 }
@@ -151,73 +174,41 @@ function SearchToggle() {
 /**
  * @param {{count: number}}
  */
-function CartHeader({count, cart}) {
+function CartHeader({count, cart, deliveryInfo}) {
   
   return (
-  <div className="dropdown dropdown-end">
-      <label tabIndex={0} className="btn btn-ghost btn-circle">
+  <div className="drawer drawer-end lg:hidden">
+      <input id="cart-drawer" type="checkbox" className="drawer-toggle" />
+      <div className="drawer-content">
+      <label htmlFor="cart-drawer" className="drawer-button btn btn-ghost btn-circle">
         <div className="indicator">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-          <span className="badge badge-sm indicator-item">{count}</span>
+          <span className="badge badge-sm indicator-item z-10">{count}</span>
         </div>
       </label>
+      </div>
 
-      <div tabIndex={0} className="w-70 mt-3 z-30 card card-compact bg-base-100 dropdown-content shadow w-[30em]">
-        <div className="card-body gap-4 z-30">
-          <div className="font-bold text-lg">{count} items</div>
-          <CartLines lines={cart?.lines} layout={"aside"}/>
-          <CartDiscounts discountCodes={cart?.discountCodes} />
-
-          <CartSummary cart={cart} />
-          
-          <div className="card-actions">
-            <Link to="/cart" className="btn btn-primary btn-block">continue</Link>
-          </div>
-        </div>
+      <div className="drawer-side z-30">
+        <label htmlFor="cart-drawer" aria-label="close sidebar" className="drawer-overlay"></label>
+        <CartMainPane cart={cart} count={count} deliveryInfo={deliveryInfo} layout={"mobile"}><CartLines lines={cart?.lines} layout={"aside"}/></CartMainPane>
       </div>
     </div>
  );
 }
 
-function CartSummary({cart}) {
-  const discountCost = Number(cart?.cost?.totalAmount?.amount) - Number(cart?.cost?.subtotalAmount?.amount);
-  const discountAmount = { amount: String(discountCost), currencyCode: cart?.cost?.totalAmount?.currencyCode };
-  const shipping = "free";
-  console.log(discountAmount)
- 
-  return (
-    <div className="card bg-white">
-      <div className="card-body">
-        <div className="flex flex-col gap-3">
-          {cart?.cost?.subtotalAmount?.amount && <SummaryRow size={"sm"} label={"subtotal"}><Money data={cart?.cost?.subtotalAmount}></Money></SummaryRow>}
-          {discountCost > 0 && <SummaryRow size={"sm"} label={"discount"}><Money data={discountAmount}></Money></SummaryRow>}
-          {shipping && <SummaryRow size={"sm"} label={"shipping"}>{shipping}</SummaryRow>}
-          {cart?.cost?.totalAmount?.amount && <SummaryRow size={"lg"} label={"total"}><Money data={cart?.cost?.totalAmount}></Money></SummaryRow>}
-        </div>
-      </div>
-    </div>
-  )
-}
 
-function SummaryRow({label, value, size, children}) {
-  const sizeClass = "text-" + size;
-  return (
-    <div className="flex justify-between">
-      <dt className={sizeClass}>{label}</dt>
-      <dd className={sizeClass}>{children}</dd>
-    </div>
-  );
-}
+
+
 /**
  * @param {Pick<HeaderProps, 'cart'>}
  */
-function CartToggle({cart}) {
+function CartToggle({cart, deliveryInfo}) {
   return (
     <Suspense fallback={<CartHeader count={0} />}>
       <Await resolve={cart}>
         {(cart) => {
           if (!cart) return <CartHeader count={0} />;
-          return <CartHeader count={cart.totalQuantity || 0} cart={cart}/>;
+          return <CartHeader deliveryInfo={deliveryInfo} count={cart.totalQuantity || 0} cart={cart}/>;
         }}
       </Await>
     </Suspense>

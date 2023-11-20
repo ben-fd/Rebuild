@@ -46,8 +46,8 @@ export default function Collection() {
   const {collection} = useLoaderData();
 
   return (
-    <div className="collection">
-      <h1>{collection.title}</h1>
+    <div className="flex flex-col justify-center align-middle items-center gap-2">
+      <h1 className="lowercase text-3xl font-sans">{collection.title}</h1>
       <p className="collection-description">{collection.description}</p>
       <Pagination connection={collection.products}>
         {({nodes, isLoading, PreviousLink, NextLink}) => (
@@ -55,8 +55,11 @@ export default function Collection() {
             <PreviousLink>
               {isLoading ? 'Loading...' : <span>↑ Load previous</span>}
             </PreviousLink>
+            <div className="">
             <ProductsGrid products={nodes} />
-            <br />
+            </div>
+            
+            
             <NextLink>
               {isLoading ? 'Loading...' : <span>Load more ↓</span>}
             </NextLink>
@@ -72,7 +75,7 @@ export default function Collection() {
  */
 function ProductsGrid({products}) {
   return (
-    <div className="products-grid">
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
       {products.map((product, index) => {
         return (
           <ProductItem
@@ -97,24 +100,32 @@ function ProductItem({product, loading}) {
   const variantUrl = useVariantUrl(product.handle, variant.selectedOptions);
   return (
     <Link
-      className="product-item"
+      className="card card-compact bg-white shadow-md"
       key={product.id}
       prefetch="intent"
       to={variantUrl}
     >
-      {product.featuredImage && (
-        <Image
+     {product.featuredImage && (
+        <figure className="">
+            <Image
           alt={product.featuredImage.altText || product.title}
           aspectRatio="1/1"
           data={product.featuredImage}
           loading={loading}
           sizes="(min-width: 45em) 400px, 100vw"
         />
+        </figure>
+        
       )}
+      <div className="card-body">
+      
       <h4>{product.title}</h4>
       <small>
         <Money data={product.priceRange.minVariantPrice} />
       </small>
+      </div>
+
+      
     </Link>
   );
 }

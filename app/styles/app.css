@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+
 link {
   display: none;
   height: 0px;
@@ -248,10 +249,6 @@ aside li {
   width: calc(var(--aside-width) - 40px);
 }
 
-.cart-line-quantiy {
-  display: flex;
-}
-
 .cart-discount {
   align-items: center;
   display: flex;
@@ -482,3 +479,4 @@ aside li {
 .account-logout {
   display: inline-block;
 }
+

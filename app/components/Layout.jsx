@@ -3,7 +3,7 @@ import {Suspense} from 'react';
 import {Aside} from '~/components/Aside';
 import {Footer} from '~/components/Footer';
 import {Header, HeaderMenu} from '~/components/Header';
-import {CartMain} from '~/components/Cart';
+import {CartMain, DesktopCartAside} from '~/components/Cart';
 import {
   PredictiveSearchForm,
   PredictiveSearchResults,
@@ -12,16 +12,21 @@ import {
 /**
  * @param {LayoutProps}
  */
-export function Layout({cart, children = null, footer, header, isLoggedIn}) {
+export function Layout({cart, deliveryInfo, children = null, footer, header, isLoggedIn}) {
+
   return (
     <>
-      <CartAside cart={cart} />
       <SearchAside />
-      <Header header={header} cart={cart} isLoggedIn={isLoggedIn} />
-      <main>{children}</main>
+      <Header header={header} cart={cart} deliveryInfo={deliveryInfo} isLoggedIn={isLoggedIn} />
+      
+        <div className="lg:grid lg:grid-cols-7 lg:gap-4 p-8">
+            <main className="lg:col-span-5">{children}</main>
+            <DesktopCartAside cart={cart} deliveryInfo={deliveryInfo}/>
+        </div>
+      
       <Suspense>
         <Await resolve={footer}>
-          {(footer) => <Footer menu={footer.menu} shop={header.shop} />}
+          {/*(footer) => <Footer menu={footer.menu} shop={header.shop} />*/}
         </Await>
       </Suspense>
     </>
@@ -44,6 +49,7 @@ function CartAside({cart}) {
     </Aside>
   );
 }
+    
 
 function SearchAside() {
   return (

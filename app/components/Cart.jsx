@@ -1,10 +1,15 @@
 import {CartForm, Image, Money} from '@shopify/hydrogen';
-import {Link} from '@remix-run/react';
+import {Link, Await} from '@remix-run/react';
+import {Suspense, useState, useEffect} from 'react';
 import {useVariantUrl} from '~/utils';
+import {CloseIcon, AddIcon, MinusIcon, Icons, VanIcon} from '~/components/Icons';
+import {fieldDoctorSettings} from '~/root';
 
 /**
  * @param {CartMainProps}
  */
+
+const iconSize = "1.5em";
 export function CartMain({layout, cart}) {
   const linesCount = Boolean(cart?.lines?.nodes?.length || 0);
   const withDiscount =
@@ -49,16 +54,19 @@ export function CartLines({lines, layout}) {
   if (!lines) return null;
 
   return (
-    <div aria-labelledby="cart-lines">
+    <div aria-labelledby="cart-lines" className="">
       <ul>
         {lines.nodes.map((line) => (
-          <CartLineItem key={line.id} line={line} layout={layout} />
+          <CartLineItem key={layout + line.id} line={line} layout={layout} />
         ))}
       </ul>
     </div>
   );
 }
 
+const processProductTitle = (title) => {
+  return title.replaceAll(' (Mediterranean)', "").replaceAll(' (Low FODMAP)', "").replaceAll("L+L ", "")
+};
 /**
  * @param {{
  *   layout: CartMainProps['layout'];
@@ -66,48 +74,49 @@ export function CartLines({lines, layout}) {
  * }}
  */
 function CartLineItem({layout, line}) {
+  
   const {id, merchandise} = line;
   const {product, title, image, selectedOptions} = merchandise;
   const lineItemUrl = useVariantUrl(product.handle, selectedOptions);
-
+  //console.log(JSON.stringify(merchandise, null, 2))
   return (
-    <li key={id} className="card card-side card-compact bg-white shadow-sm">
+    <li key={layout+id} className="grid  grid-cols-3 border-b gap-2 py-8 m-0">
       {image && (
-        <figure><Image
+        <figure className=" col-span-1 grow"><Image
         alt={title}
         aspectRatio="1/1"
         data={image}
-        height={100}
+        height={200}
         loading="lazy"
-        width={100}
+        width={200}
+        className=" object-cover border border-gray-200 rounded-box shadow-sm w-full"
       /></figure>
       )}
-
-      <div className="card-body">
+      <div className="col-span-2 flex flex-col grow">
         <Link
           prefetch="intent"
           to={lineItemUrl}
-          className="card-title text-sm"
+          className=" text-lg lowercase"
           onClick={() => {
             if (layout === 'aside') {
               // close the drawer
               window.location.href = lineItemUrl;
             }
           }}
-        >{product.title}
+        >{processProductTitle(product.title)}
         </Link>
         {/*<CartLinePrice line={line} as="span" />*/}
         <ul>
           {selectedOptions.map((option) => (
             <li key={option.name}>
-              <small>
-                {option.name}: {option.value}
+              <small className="lowercase">
+                {option.value}
               </small>
             </li>
           ))}
+
         </ul>
-        
-        <CartLineQuantity line={line} />
+        <CartLineQuantity line={line}/>
       </div>
     </li>
   );
@@ -136,6 +145,7 @@ function CartCheckoutActions({checkoutUrl}) {
  *   layout: CartMainProps['layout'];
  * }}
  */
+/*
 export function CartSummary({cost, layout, children = null}) {
   const className =
     layout === 'page' ? 'cart-summary-page' : 'cart-summary-aside';
@@ -157,6 +167,7 @@ export function CartSummary({cost, layout, children = null}) {
     </div>
   );
 }
+*/
 
 /**
  * @param {{lineIds: string[]}}
@@ -168,7 +179,7 @@ function CartLineRemoveButton({lineIds}) {
       action={CartForm.ACTIONS.LinesRemove}
       inputs={{lineIds}}
     >
-      <button type="submit">Remove</button>
+      <button type="submit"><CloseIcon size={iconSize} /></button>
     </CartForm>
   );
 }
@@ -183,30 +194,37 @@ function CartLineQuantity({line}) {
   const nextQuantity = Number((quantity + 1).toFixed(0));
 
   return (
-    <div className="card-actions justify-end">
-      <small>Quantity: {quantity} &nbsp;&nbsp;</small>
-      <CartLineUpdateButton lines={[{id: lineId, quantity: prevQuantity}]}>
-        <button
-          aria-label="Decrease quantity"
-          disabled={quantity <= 1}
-          name="decrease-quantity"
-          value={prevQuantity}
-        >
-          <span>&#8722; </span>
-        </button>
-      </CartLineUpdateButton>
-      &nbsp;
-      <CartLineUpdateButton lines={[{id: lineId, quantity: nextQuantity}]}>
-        <button
-          aria-label="Increase quantity"
-          name="increase-quantity"
-          value={nextQuantity}
-        >
-          <span>&#43;</span>
-        </button>
-      </CartLineUpdateButton>
-      &nbsp;
-      <CartLineRemoveButton lineIds={[lineId]} />
+    <div className="card-actions flex-row justify-end">
+      <div className="join w-sm">
+        <div className="btn btn-sm join-item btn-circle bg-neutral">
+          <CartLineUpdateButton lines={[{id: lineId, quantity: prevQuantity}]}>
+            <button
+              aria-label="Decrease quantity"
+              disabled={quantity <= 0}
+              name="decrease-quantity"
+              value={prevQuantity}
+            >
+              <span><MinusIcon size={iconSize}/></span>
+            </button>
+          </CartLineUpdateButton>
+        </div>
+        <input type="text" defaultValue={quantity} className="input input-bordered join-item bg-white text-center w-10 input-sm"/>
+        <div className="btn btn-sm join-item btn-circle bg-neutral">
+          <CartLineUpdateButton lines={[{id: lineId, quantity: nextQuantity}]}>
+            <button
+              aria-label="Increase quantity"
+              name="increase-quantity"
+              value={nextQuantity}
+            >
+              <span><AddIcon size={iconSize}/></span>
+            </button>
+          </CartLineUpdateButton>
+        </div>
+      </div>
+      {/*<div className="btn btn-sm btn-circle bg-transparent">
+        <CartLineRemoveButton lineIds={[lineId]} />
+  </div>*/}
+      
     </div>
   );
 }
@@ -298,6 +316,139 @@ export function CartDiscounts({discountCodes}) {
         </div>
       </UpdateDiscountForm>)}
       
+    </div>
+  );
+}
+
+
+export function CartMainPane({count, cart, deliveryInfo, layout, children}) {
+  return (
+        <div className="card card-compact bg-white shadow-2xl gap-4 z-30 sticky top-8 bottom-8">
+          <div className="card-body justify-between h-[calc(100vh-64px)]">
+              <h2 className="text-xl">your order</h2>
+              <div className="grow overflow-y-scroll">
+                {children}
+              </div>
+              <div className="flex flex-col gap-4">
+                <div className="font-bold text-lg">{count} items</div>
+                {<CartDeliveryDate deliveryInfo={deliveryInfo}></CartDeliveryDate>}
+                <CartDiscounts discountCodes={cart?.discountCodes} />
+                <CartSummary cart={cart} />
+                <CartProgressBar cart={cart}/>
+              </div>
+            </div>
+        </div>
+ );
+}
+
+export function DesktopCartAside({cart, deliveryInfo}) {
+  return (
+    <div className="hidden lg:block col-span-2">
+      <Suspense fallback={<p>Loading cart ...</p>}>
+        <Await resolve={cart}>
+          {(cart) => {
+            return <CartMainPane layout={"desktop"} count={cart?.totalQuantity} cart={cart} deliveryInfo={deliveryInfo}><CartLines lines={cart?.lines} layout={"desktop"}/></CartMainPane>;
+          }}
+        </Await>
+      </Suspense>
+    
+    </div>
+  )
+}
+
+export function CartProgressBar({cart, deliveryInfo}) {
+const progress = Number(cart?.cost?.subtotalAmount?.amount).toFixed(0) || 0;
+  
+return ( progress < fieldDoctorSettings.minimumOrder ? <progress className="progress progress-accent h-4" value={progress} max="42.50"></progress> : <div className="card-actions">
+   <Link to="/cart" className="btn btn-primary btn-block">continue</Link>
+ </div>
+)
+    
+}
+
+
+function CartSummary({cart}) {
+  const discountCost = Number(cart?.cost?.totalAmount?.amount) - Number(cart?.cost?.subtotalAmount?.amount);
+  const discountAmount = { amount: String(discountCost), currencyCode: cart?.cost?.totalAmount?.currencyCode };
+  const shipping = "free";
+ 
+  return (
+    <div className="card bg-white">
+      <div className="card-body">
+        <div className="flex flex-col gap-3">
+          {cart?.cost?.subtotalAmount?.amount && <SummaryRow size={"sm"} label={"subtotal"}><Money data={cart?.cost?.subtotalAmount}></Money></SummaryRow>}
+          {discountCost < 0 && <SummaryRow size={"sm"} label={"discount"}><Money className=" text-red-600" data={discountAmount}></Money></SummaryRow>}
+          {shipping && <SummaryRow size={"sm"} label={"shipping"}>{shipping}</SummaryRow>}
+          {cart?.cost?.totalAmount?.amount && <SummaryRow size={"lg"} label={"total"}><Money data={cart?.cost?.totalAmount}></Money></SummaryRow>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ukDate(date) {
+  return date.toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+export function CartDeliveryDate({deliveryInfo}){
+
+  return (
+   <Suspense fallback={<p>loading...</p>}>
+   <Await resolve={deliveryInfo}>
+     {(deliveryInfo)=> {
+        const selectedDate = deliveryInfo?.delivery_date;
+        return <SummaryRow size={"lg"} label={<span className="flex flex-row gap-4"><VanIcon size={"1.5em"}/> <>{ukDate(new Date(selectedDate))}</></span>}><button className="btn btn-secondary">change</button></SummaryRow>}
+     }
+   </Await>
+ </Suspense>
+  )
+  /*
+  return (
+    <div className="card bg-white">
+      <div className="card-body">
+        <h4 className="card-title">your plan</h4>
+        <label className="label">
+          <span className="label-text">first delivery date</span>
+        </label>
+          <select className="select select-bordered select-secondary w-full max-w-xs bg-white">
+            <Suspense fallback={<p>loading...</p>}>
+              <Await resolve={deliveryInfo}>
+                {(deliveryInfo)=> {
+                    return deliveryInfo?.delivery_dates.map((date) => (<option key={date} value={date}>{ ukDate(new Date(date)) }</option>))}
+                }
+              </Await>
+            </Suspense>
+          </select>
+          
+          <label className="label">
+          <span className="label-text">delivery frequency</span>
+        </label>
+        <select className="select select-bordered select-secondary w-full max-w-xs bg-white">
+          <option>every week</option>
+          <option>every 2 weeks</option>
+          <option>every 3 weeks</option>
+          <option>every 4 weeks</option>
+          <option>one off</option>
+        </select>
+
+        </div>
+        
+      </div>
+  )
+  */
+}
+
+function SummaryRow({label, value, size, children}) {
+  const sizeClass = "text-" + size;
+  return (
+    <div className="flex justify-between align-middle  items-center">
+      <dt className={sizeClass}>{label}</dt>
+      <dd className={sizeClass}>{children}</dd>
     </div>
   );
 }

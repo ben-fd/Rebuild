@@ -61,6 +61,15 @@ export const useRootLoaderData = () => {
   return root?.data;
 };
 
+export const fieldDoctorSettings ={
+  cart: {
+    "minimumOrder" : 42.50,
+    "deliveryFee" : 5.00,
+    "deliveryFeeThreshold" : 50.00,
+  }
+} 
+
+
 /**
  * @param {LoaderFunctionArgs}
  */
@@ -78,6 +87,7 @@ export async function loader({context}) {
   // defer the cart query by not awaiting it
   const cartPromise = cart.get();
 
+  
   // defer the footer query (below the fold)
   const footerPromise = storefront.query(FOOTER_QUERY, {
     cache: storefront.CacheLong(),
@@ -94,10 +104,13 @@ export async function loader({context}) {
     },
   });
 
+  // defer the delivery dates query
+  const deliveryPromise = getAvailabledeliveryInfo();
   return defer(
     {
       cart: cartPromise,
       footer: footerPromise,
+      deliveryInfo: deliveryPromise,
       header: await headerPromise,
       isLoggedIn,
       publicStoreDomain,
@@ -120,7 +133,7 @@ export default function App() {
         <Links />
 
       </head>
-      <body>
+      <body className="font-sans font-light">
         <Layout {...data}>
           <Outlet />
         </Layout>
@@ -207,6 +220,13 @@ async function validateCustomerAccessToken(session, customerAccessToken) {
   }
 
   return {isLoggedIn, headers};
+}
+
+async function getAvailabledeliveryInfo(){
+  const url = "https://field-doctor-server.herokuapp.com/order/delivery_date";
+  const response = await fetch(url);
+
+  return response.json();;
 }
 
 const MENU_FRAGMENT = `#graphql
