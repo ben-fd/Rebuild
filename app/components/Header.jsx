@@ -11,7 +11,9 @@ import {Link} from '@remix-run/react';
 export function Header({header, isLoggedIn, cart, deliveryInfo}) {
   const {shop, menu} = header;
   return (
-    <nav className="bg-secondary shadow-xl navbar sticky lg:relative top-0 md:px-4 z-30  lg:h-4">
+    <header>
+    <div className="bg-secondary shadow-xl navbar sticky lg:relative top-0 md:px-4 z-30 lg:h-4 flex justify-center">
+    <nav className="navbar lg:relative z-30 max-w-[1390px]">
       <div className="navbar-start">
         <div className="dropdown">
           <label tabIndex={0} className="btn btn-ghost">
@@ -43,7 +45,13 @@ export function Header({header, isLoggedIn, cart, deliveryInfo}) {
       <div className="navbar-end">
         <HeaderCtas isLoggedIn={isLoggedIn} cart={cart} deliveryInfo={deliveryInfo}/>
       </div>
+      
     </nav>
+    
+    </div>
+    <div className="z-40" id="notificationContainer">
+    </div>
+    </header>
   );
 }
 

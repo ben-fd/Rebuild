@@ -66,7 +66,8 @@ export const fieldDoctorSettings ={
     "minimumOrder" : 42.50,
     "deliveryFee" : 5.00,
     "deliveryFeeThreshold" : 50.00,
-  }
+  },
+  sellingPlans : [{id: 3520921855, title: "Every Week"},{id: 3520889087, title: "Every 2 Weeks"}, {id: 3520856319, title: "Every 3 Weeks"}, {id: 3520823551, title: "Every 4 Weeks"}, {id: 3520790783, title:"Every 5 Weeks"}, {id: 3520954623, title: "Every 6 Weeks"}, {id: 1, title:"One off"} ]
 } 
 
 

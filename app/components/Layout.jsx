@@ -1,13 +1,15 @@
 import {Await} from '@remix-run/react';
-import {Suspense} from 'react';
+import {Suspense, useState, useEffect} from 'react';
 import {Aside} from '~/components/Aside';
 import {Footer} from '~/components/Footer';
 import {Header, HeaderMenu} from '~/components/Header';
-import {CartMain, DesktopCartAside} from '~/components/Cart';
+import {CartMain, DesktopCartAside, CartModals} from '~/components/Cart';
 import {
   PredictiveSearchForm,
   PredictiveSearchResults,
 } from '~/components/Search';
+import { TickIcon } from './Icons';
+import { fieldDoctorSettings } from '~/root';
 
 /**
  * @param {LayoutProps}
@@ -16,13 +18,18 @@ export function Layout({cart, deliveryInfo, children = null, footer, header, isL
 
   return (
     <>
-      <SearchAside />
+      {/*<SearchAside />*/}
+      <CartModals cart={cart} deliveryInfo={deliveryInfo}/>
       <Header header={header} cart={cart} deliveryInfo={deliveryInfo} isLoggedIn={isLoggedIn} />
       
-        <div className="lg:grid lg:grid-cols-7 lg:gap-4 p-8">
-            <main className="lg:col-span-5">{children}</main>
-            <DesktopCartAside cart={cart} deliveryInfo={deliveryInfo}/>
+      <section className="flex justify-center py-0">
+        <div className="lg:grid lg:grid-cols-7 max-w-[1390px]">
+              
+              <main className="lg:col-span-5 p-8">{children}</main>
+              <DesktopCartAside cart={cart} deliveryInfo={deliveryInfo}/>
         </div>
+      </section>
+        
       
       <Suspense>
         <Await resolve={footer}>
@@ -31,6 +38,14 @@ export function Layout({cart, deliveryInfo, children = null, footer, header, isL
       </Suspense>
     </>
   );
+}
+
+export function setNotification(type, message){
+  document.getElementById("notificationContainer").innerHTML=userNotification(type, message);
+  setTimeout(() => {
+    document.getElementById("notificationContainer").innerHTML="";
+  }, 3000);
+  
 }
 
 /**
@@ -50,6 +65,21 @@ function CartAside({cart}) {
   );
 }
     
+function userNotification(type, message) {
+      switch(type) {
+        case 'success' :
+          return `<div role="alert" class="alert alert-success">
+          <svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" viewBox="0 0 64 64" fill="none" stroke="#000000"><circle cx="32" cy="32" r="24"/><polyline points="44 24 28 40 20 32"/></svg>
+                <span>${message}</span>
+              </div>
+            `;
+        break;
+        case 'error' :
+        break;
+
+      }
+      
+}
 
 function SearchAside() {
   return (

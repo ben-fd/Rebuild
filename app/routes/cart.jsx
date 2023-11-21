@@ -25,6 +25,7 @@ export async function action({request, context}) {
 
   const {action, inputs} = CartForm.getFormInput(formData);
 
+  //console.log(JSON.stringify(CartForm.getFormInput(formData), null, 2))
   if (!action) {
     throw new Error('No action provided');
   }
@@ -52,6 +53,10 @@ export async function action({request, context}) {
       discountCodes.push(...inputs.discountCodes);
 
       result = await cart.updateDiscountCodes(discountCodes);
+      break;
+    }
+    case CartForm.ACTIONS.AttributesUpdateInput : {
+      result = await cart.updateAttributes(inputs.attributes);
       break;
     }
     case CartForm.ACTIONS.BuyerIdentityUpdate: {

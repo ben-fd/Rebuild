@@ -27,7 +27,8 @@ img {
 * components/Aside
 * --------------------------------------------------
 */
-aside {
+
+/* aside {
   background: var(--color-light);
   box-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
   height: 100vh;
@@ -127,10 +128,11 @@ aside li {
   pointer-events: auto;
   visibility: visible;
 }
-/* reveal aside */
+
 .overlay:target aside {
   transform: translateX(calc(var(--aside-width) * -1));
 }
+ */
 
 /*
 * --------------------------------------------------

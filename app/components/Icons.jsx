@@ -31,6 +31,30 @@ export function VanIcon({size}){
     )
 }
 
+export function TickIcon({size}){
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 64 64" fill="none" stroke="#000000"><circle cx="32" cy="32" r="24"/><polyline points="44 24 28 40 20 32"/></svg>
+    )
+}
+
+export function PencilIcon({size}){
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 64 64" fill="none" stroke="#000000"><polygon points="24 52 56 20 44 8 12 40 8 56 24 52"/><line x1="12" y1="40" x2="24" y2="52"/><line x1="36" y1="16" x2="48" y2="28"/></svg>
+    )
+}
+
+export function FrequencyIcon({size}){
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none">
+            <rect width="24" height="24" fill="none"/>
+            <path d="M2.5 12C2.5 12.2761 2.72386 12.5 3 12.5C3.27614 12.5 3.5 12.2761 3.5 12H2.5ZM3.5 12C3.5 7.30558 7.30558 3.5 12 3.5V2.5C6.75329 2.5 2.5 6.75329 2.5 12H3.5ZM12 3.5C15.3367 3.5 18.2252 5.4225 19.6167 8.22252L20.5122 7.77748C18.9583 4.65062 15.7308 2.5 12 2.5V3.5Z" fill="#000000"/>
+            <path d="M20.4716 2.42157V8.07843H14.8147" stroke="#000000" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M21.5 12C21.5 11.7239 21.2761 11.5 21 11.5C20.7239 11.5 20.5 11.7239 20.5 12L21.5 12ZM20.5 12C20.5 16.6944 16.6944 20.5 12 20.5L12 21.5C17.2467 21.5 21.5 17.2467 21.5 12L20.5 12ZM12 20.5C8.66333 20.5 5.77477 18.5775 4.38328 15.7775L3.48776 16.2225C5.04168 19.3494 8.26923 21.5 12 21.5L12 20.5Z" fill="#000000"/>
+            <path d="M3.52844 21.5784L3.52844 15.9216L9.18529 15.9216" stroke="#000000" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+    )
+}
+
 export default function Icons(){
     return "";
 }
