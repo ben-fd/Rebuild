@@ -5,21 +5,21 @@ module.exports = {
     themes: [
       {
         mytheme: {
-          "primary": '#f3db8f',
-          "secondary": '#BCD8C9',
-          "accent": '#FDC9CB',
-          "neutral": '#DFEEE5',
-          "base-100": '#faf6f4'
+          primary: '#f3db8f',
+          secondary: '#BCD8C9',
+          accent: '#FDC9CB',
+          neutral: '#DFEEE5',
+          'base-100': '#faf6f4',
+          '--rounded-btn': '2rem',
         },
       },
     ],
   },
-  content: ["./app/**/*.{html,js,jsx,ts,tsx}"],
+  content: ['./app/**/*.{html,js,jsx,ts,tsx}'],
   theme: {
-      fontFamily: {
-        'sans' : ["'HelveticaNeue'"]
-      }
+    fontFamily: {
+      sans: ["'HelveticaNeue'"],
+    },
   },
-  plugins: [require("daisyui"), require("@tailwindcss/typography")],
-}
-
+  plugins: [require('daisyui'), require('@tailwindcss/typography')],
+};

@@ -55,7 +55,7 @@ export async function action({request, context}) {
       result = await cart.updateDiscountCodes(discountCodes);
       break;
     }
-    case CartForm.ACTIONS.AttributesUpdateInput : {
+    case CartForm.ACTIONS.AttributesUpdateInput: {
       result = await cart.updateAttributes(inputs.attributes);
       break;
     }

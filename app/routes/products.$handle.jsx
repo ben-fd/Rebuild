@@ -121,7 +121,7 @@ export default function Product() {
 /**
  * @param {{image: ProductVariantFragment['image']}}
  */
-function ProductImage({image}) {
+export function ProductImage({image, sizes}) {
   if (!image) {
     return <div className="product-image" />;
   }
@@ -132,7 +132,7 @@ function ProductImage({image}) {
         aspectRatio="1/1"
         data={image}
         key={image.id}
-        sizes="(min-width: 45em) 50vw, 100vw"
+        sizes={!sizes ? '(min-width: 45em) 50vw, 100vw' : sizes}
       />
     </div>
   );
@@ -381,7 +381,7 @@ const PRODUCT_FRAGMENT = `#graphql
   ${PRODUCT_VARIANT_FRAGMENT}
 `;
 
-const PRODUCT_QUERY = `#graphql
+export const PRODUCT_QUERY = `#graphql
   query Product(
     $country: CountryCode
     $handle: String!

@@ -61,15 +61,22 @@ export const useRootLoaderData = () => {
   return root?.data;
 };
 
-export const fieldDoctorSettings ={
+export const fieldDoctorSettings = {
   cart: {
-    "minimumOrder" : 42.50,
-    "deliveryFee" : 5.00,
-    "deliveryFeeThreshold" : 50.00,
+    minimumOrder: 42.5,
+    deliveryFee: 5.0,
+    deliveryFeeThreshold: 50.0,
   },
-  sellingPlans : [{id: 3520921855, title: "Every Week"},{id: 3520889087, title: "Every 2 Weeks"}, {id: 3520856319, title: "Every 3 Weeks"}, {id: 3520823551, title: "Every 4 Weeks"}, {id: 3520790783, title:"Every 5 Weeks"}, {id: 3520954623, title: "Every 6 Weeks"}, {id: 1, title:"One off"} ]
-} 
-
+  sellingPlans: [
+    {id: 3520921855, title: 'Every Week'},
+    {id: 3520889087, title: 'Every 2 Weeks'},
+    {id: 3520856319, title: 'Every 3 Weeks'},
+    {id: 3520823551, title: 'Every 4 Weeks'},
+    {id: 3520790783, title: 'Every 5 Weeks'},
+    {id: 3520954623, title: 'Every 6 Weeks'},
+    {id: 1, title: 'One off'},
+  ],
+};
 
 /**
  * @param {LoaderFunctionArgs}
@@ -88,7 +95,6 @@ export async function loader({context}) {
   // defer the cart query by not awaiting it
   const cartPromise = cart.get();
 
-  
   // defer the footer query (below the fold)
   const footerPromise = storefront.query(FOOTER_QUERY, {
     cache: storefront.CacheLong(),
@@ -101,7 +107,7 @@ export async function loader({context}) {
   const headerPromise = storefront.query(HEADER_QUERY, {
     cache: storefront.CacheLong(),
     variables: {
-      headerMenuHandle: 'mainmenu4_new', // Adjust to your header menu handle
+      headerMenuHandle: 'hydrogenmenu', // Adjust to your header menu handle
     },
   });
 
@@ -132,7 +138,6 @@ export default function App() {
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <Meta />
         <Links />
-
       </head>
       <body className="font-sans font-light">
         <Layout {...data}>
@@ -223,11 +228,11 @@ async function validateCustomerAccessToken(session, customerAccessToken) {
   return {isLoggedIn, headers};
 }
 
-async function getAvailabledeliveryInfo(){
-  const url = "https://field-doctor-server.herokuapp.com/order/delivery_date";
+async function getAvailabledeliveryInfo() {
+  const url = 'https://field-doctor-server.herokuapp.com/order/delivery_date';
   const response = await fetch(url);
 
-  return response.json();;
+  return response.json();
 }
 
 const MENU_FRAGMENT = `#graphql
