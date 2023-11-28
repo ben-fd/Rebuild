@@ -33,10 +33,17 @@ export function Layout({
         isLoggedIn={isLoggedIn}
       />
 
+      {/*
       <section className="flex justify-center py-0">
         <div className="lg:grid lg:grid-cols-4">
-          <main className="lg:col-span-3 p-8 max-w-[1690px]">{children}</main>
+          <main className="lg:col-span-3">{children}</main>
           <DesktopCartAside cart={cart} deliveryInfo={deliveryInfo} />
+        </div>
+      </section>
+      */}
+      <section className="flex justify-center py-0">
+        <div className="lg:grid lg:grid-cols-4">
+          <main className="lg:col-span-4">{children}</main>
         </div>
       </section>
 

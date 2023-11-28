@@ -228,7 +228,7 @@ async function validateCustomerAccessToken(session, customerAccessToken) {
   return {isLoggedIn, headers};
 }
 
-async function getAvailabledeliveryInfo() {
+export async function getAvailabledeliveryInfo() {
   const url = 'https://field-doctor-server.herokuapp.com/order/delivery_date';
   const response = await fetch(url);
 

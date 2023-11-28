@@ -1,33 +1,19 @@
-import {json, redirect} from '@shopify/remix-oxygen';
 import {
   useLoaderData,
   Link,
-  Form,
-  useNavigate,
-  useLocation,
   useFetcher,
   Await,
-  useActionData,
   useFetchers,
+  Outlet,
+  useRouteLoaderData,
 } from '@remix-run/react';
 import {Suspense, useEffect, useState} from 'react';
-import {
-  Pagination,
-  getPaginationVariables,
-  getSelectedProductOptions,
-  Image,
-  Money,
-  CartForm,
-  cartLinesAddDefault,
-  useOptimisticData,
-  OptimisticInput,
-} from '@shopify/hydrogen';
-import {useVariantUrl} from '~/utils';
+import {Image, Money, CartForm} from '@shopify/hydrogen';
 import {processProductTitle} from '~/components/Cart';
-import Cart from './cart';
 import ProductModal, {loadProductDataByFetch} from '~/components/ProductModal';
 import {PRODUCT_QUERY} from './products.$handle';
 import {AddIcon, MinusIcon} from '~/components/Icons';
+import {DesktopCartAside, getAvailabledeliveryInfo} from '~/components/Cart';
 
 /**
  * @type {MetaFunction<typeof loader>}
@@ -90,6 +76,7 @@ export async function loader({request, params, context}) {
   });
 
   return {
+    cart: cart.get(),
     collection,
     context,
     cartLines: cartLines?.lines?.nodes,
@@ -115,23 +102,11 @@ function otherMeals(nodes) {
 export default function Collection() {
   /** @type {LoaderReturnData} */
   const {collection, context, cartLines} = useLoaderData();
+  const rootData = useRouteLoaderData('root');
+  const {cart, deliveryInfo} = rootData;
 
   const product = null;
   //console.log(cartLines);
-  const [newUrl, setNewUrl] = useState('');
-
-  useEffect(() => {
-    /*
-    document
-      .getElementById('product_modal')
-      .addEventListener('close', (event) => {
-        const nextUrl = new URL(window.location.href);
-        nextUrl.searchParams.delete('handle');
-        setNewUrl(nextUrl);
-        window.history.replaceState({}, '', nextUrl);
-      });
-      */
-  }, []);
 
   return (
     <>
@@ -140,24 +115,31 @@ export default function Collection() {
           <ProductModal product={product || null} />
         </Await>
       </Suspense>
-      <div className="flex flex-col justify-center align-middle items-center gap-8">
-        <h1 className="lowercase text-3xl font-sans">{collection.title}</h1>
-        <h2 className="text-xl text-center">perfect for you</h2>
+      <Outlet />
+      <section className="flex justify-center py-0">
+        <div className="lg:grid lg:grid-cols-4">
+          <div className="flex flex-col justify-center align-middle items-center gap-8 p-8 max-w-[1690px] lg:col-span-3">
+            <h2 className="lowercase text-3xl font-sans">choose your meals</h2>
+            <h3 className="text-xl text-center">perfect for you</h3>
 
-        <div className="">
-          <ProductsGrid
-            products={perfectForYou(collection.products.nodes)}
-            cartLines={cartLines}
-          />
+            <div className="">
+              <ProductsGrid
+                products={perfectForYou(collection.products.nodes)}
+                cartLines={cartLines}
+              />
+            </div>
+            <h3 className="text-xl text-center">our other meals</h3>
+            <div className="">
+              <ProductsGrid
+                products={otherMeals(collection.products.nodes)}
+                cartLines={cartLines}
+              />
+            </div>
+          </div>
+
+          <DesktopCartAside cart={cart} deliveryInfo={deliveryInfo} />
         </div>
-        <h2 className="text-xl text-center">our other meals</h2>
-        <div className="">
-          <ProductsGrid
-            products={otherMeals(collection.products.nodes)}
-            cartLines={cartLines}
-          />
-        </div>
-      </div>
+      </section>
     </>
   );
 }
@@ -227,6 +209,7 @@ function ProductItem({product, loading}) {
           ) : null}
           {product.image && (
             <Image
+              className="card"
               alt={product.title}
               aspectRatio="1/1"
               src={product.image}
@@ -235,7 +218,6 @@ function ProductItem({product, loading}) {
             />
           )}
         </div>
-
         <div className="card-body">
           <Link
             className=""
@@ -254,12 +236,42 @@ function ProductItem({product, loading}) {
               value={product.handle}
             />
           </Link>
-          <span className="badge badge-neutral">{product.calories} kcal</span>
-          <span className="badge badge-neutral">{product.carbs}g carbs</span>
+          <div className="flex flex-row gap-4">
+            <span className="badge badge-neutral">{product.calories} kcal</span>
+            <span className="badge badge-neutral">{product.carbs}g carbs</span>
+          </div>
         </div>
-        <ProductAddButtons product={product} variants={product?.variants} />
+        <ProductAddOrChangeButton product={product} />
+        {/* <ProductAddButtons product={product} variants={product?.variants} />*/}
       </div>
     </>
+  );
+}
+
+function ProductAddOrChangeButton({product}) {
+  const lowestVariantPrice = product?.variants?.reduce((lowest, variant) => {
+    return Math.min(lowest, variant.price);
+  }, Infinity);
+
+  const inBasket = product?.variants?.find((variant) => {
+    return variant?.quantity > 0;
+  });
+
+  return inBasket ? (
+    <div className="card-body">
+      <button className="btn btn-neutral shadow-sm btn-outline btn-block text-xl font-light">
+        change{' '}
+      </button>
+    </div>
+  ) : (
+    <div className="card-body flex flex-row items-end justify-end">
+      <div className="flex items-center justify-between w-full gap-1">
+        <span className="font-light">from £{lowestVariantPrice}</span>
+        <button className="btn btn-primary shadow-sm text-xl font-light">
+          add
+        </button>
+      </div>
+    </div>
   );
 }
 

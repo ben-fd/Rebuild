@@ -20,6 +20,12 @@ module.exports = {
     fontFamily: {
       sans: ["'HelveticaNeue'"],
     },
+    extend: {
+      backgroundImage: {
+        'hero-texture':
+          "url('https://cdn.shopify.com/s/files/1/0271/2662/8450/files/hp-bg-n.webp?v=1679557996');",
+      },
+    },
   },
   plugins: [require('daisyui'), require('@tailwindcss/typography')],
 };
