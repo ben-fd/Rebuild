@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
 link {
   display: none;
   height: 0px;
@@ -481,4 +480,3 @@ aside li {
 .account-logout {
   display: inline-block;
 }
-

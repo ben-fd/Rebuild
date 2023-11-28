@@ -37,7 +37,7 @@ function YourRecommendedPlan() {
     const annotation = annotate(bracketsTitle, {
       type: 'highlight',
       color: '#FDC9CB4d',
-      width: 1,
+      strokeWidth: 2,
     });
     annotation.show();
   }, []);
@@ -49,7 +49,7 @@ function YourRecommendedPlan() {
         height="400"
         aspect-ratio="1"
         alt="banner image"
-        className="col-span-1 image-full"
+        className=" col-span-1 image-full"
         src="https://cdn.shopify.com/s/files/1/0271/2662/8450/files/Meals_BG.png?v=1701170483"
       />
 
