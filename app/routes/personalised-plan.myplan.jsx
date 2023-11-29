@@ -1,7 +1,8 @@
 import {annotate} from 'rough-notation';
-import {useLoaderData} from '@remix-run/react';
-import {useEffect} from 'react';
+import {useLoaderData, Await} from '@remix-run/react';
+import {Suspense, useEffect} from 'react';
 import {getTagObjects} from '~/components/Personalisation';
+import {useRouteLoaderData} from '@remix-run/react';
 
 export async function loader({request, params, context}) {
   const searchParams = new URLSearchParams(request.url.split('?')[1]);
@@ -10,6 +11,7 @@ export async function loader({request, params, context}) {
 
   const selectedTags = getTagObjects(tags);
   const selectedSorts = getTagObjects(sorts);
+
   return {selectedTags, selectedSorts};
 }
 
@@ -18,60 +20,94 @@ export async function loader({request, params, context}) {
 export default function MyPlan() {
   const loader = useLoaderData();
   const {selectedTags, selectedSorts} = loader;
+  const rootData = useRouteLoaderData('root');
+  const {cart} = rootData;
+
   return (
-    <div className="flex flex-col">
+    <>
       <BannerSection>
-        <YourRecommendedPlan></YourRecommendedPlan>
+        <YourRecommendedPlan cart={cart}></YourRecommendedPlan>
       </BannerSection>
       <PlanReassurance
         tags={selectedTags}
         sorts={selectedSorts}
       ></PlanReassurance>
-    </div>
+    </>
   );
 }
 
-function YourRecommendedPlan() {
-  useEffect(() => {
-    const bracketsTitle = document.getElementById('bracketsTitle');
-    const annotation = annotate(bracketsTitle, {
-      type: 'highlight',
-      color: '#FDC9CB4d',
-      strokeWidth: 2,
-    });
-    annotation.show();
-  }, []);
+function servings(cart) {
+  return cart?.lines?.edges?.reduce((acc, line) => {
+    return acc + line.node.quantity;
+  }, 0);
+}
 
+function YourRecommendedPlan({cart}) {
   return (
-    <div className="flex flex-row flex-wrap gap-8 p-8 max-w-[1690px] justify-center justify-items-center items-center">
+    <div className="flex flex-wrap gap-8 md:p-8 justify-center justify-items-center items-center">
       <img
         width="400"
         height="400"
         aspect-ratio="1"
         alt="banner image"
-        className=" col-span-1 image-full"
+        className="image-full"
         src="https://cdn.shopify.com/s/files/1/0271/2662/8450/files/Meals_BG.png?v=1701170483"
       />
 
-      <div className="col-span-1 flex flex-col gap-2">
-        <h1 className="text-5xl md:text-6xl leading-relaxed font-thin">
-          your{' '}
-          <span id="bracketsTitle" className=" font-bold">
-            personalised
-          </span>{' '}
-          <br />
-          14 meal plan
-        </h1>
+      <div className="">
+        <Suspense>
+          <Await resolve={cart}>
+            {(cart) => {
+              const totalCost = Number(cart?.cost?.totalAmount?.amount);
+              const costPerMeal = (totalCost / cart?.totalQuantity).toFixed(2);
+              const discountCost =
+                Number(cart?.cost?.subtotalAmount?.amount) -
+                Number(cart?.cost?.totalAmount?.amount);
 
-        <ul className="list-disc list-inside text-lg">
-          <li className="list-item">
-            dietitian-designed, chef-made frozen meals
-          </li>
-          <li className="list-item">personalised for your health</li>
-          <li className="list-item">
-            2 meals a day x 14 days, or 1 meal a day x 2 weeks
-          </li>
-        </ul>
+              useEffect(() => {
+                const bracketsTitle = document.getElementById('bracketsTitle');
+                const annotation = annotate(bracketsTitle, {
+                  type: 'highlight',
+                  color: '#FDC9CB4d',
+                  strokeWidth: 2,
+                });
+                annotation.show();
+              }, []);
+              return (
+                <div className="flex flex-col gap-2">
+                  <h1 className="text-4xl md:text-5xl leading-normal md:leading-relaxed font-thin text-center md:text-left">
+                    <span>your </span>
+                    <span id="bracketsTitle" className="font-bold">
+                      personalised
+                    </span>
+                    <br />{' '}
+                    <span>14 meal plan for only £{costPerMeal}/meal</span>
+                  </h1>
+
+                  <ul className="list-none md:list-disc md:list-inside text-lg">
+                    <li className="text-center md:text-left list-item">
+                      dietitian-designed, chef-made frozen meals, delivered to
+                      your door
+                    </li>
+                    <li className="text-center md:text-left list-item">
+                      personalised for your health goals
+                    </li>
+                    <li className="text-center md:text-left list-item">
+                      2 meals a day x 7 days, or 1 meal a day x 14 days
+                    </li>
+                  </ul>
+
+                  <p className="text-center hidden">
+                    saving £{discountCost} when you subscribe today
+                  </p>
+                  <button className="btn btn-ghost hidden">
+                    find out more
+                  </button>
+                </div>
+              );
+            }}
+          </Await>
+        </Suspense>
       </div>
     </div>
   );
@@ -79,9 +115,9 @@ function YourRecommendedPlan() {
 
 function PlanReassurance({tags, sorts}) {
   return (
-    <section className="w-full bg-neutral flex flex-wrap gap-4 align-middle justify-center items-center">
-      <h2 className="text-3xl">personalised for your health:</h2>
-      <div className="carousel gap-8 p-4 space-x-4 bg-neutral">
+    <section className="bg-neutral flex flex-col gap-4 align-middle justify-center items-center w-full">
+      <h2 className="text-xl md:text-3xl">personalised for your health</h2>
+      <div className="carousel carousel-center gap-8 p-8 space-x-2 bg-neutral  md:justify-center items-stretch  w-[99%]">
         {sorts?.map((sort) => {
           return <CarouselItem key={sort.title} tag={sort}></CarouselItem>;
         })}
@@ -103,22 +139,24 @@ function BannerSection({children}) {
 
 function CarouselItem({tag}) {
   return (
-    <carousel-item className="carousel-item  h-full">
-      <div className="card card-compact card-side outline-1 outline outline-secondary  h-full">
-        <figure>
+    <div className="carousel-item">
+      <div className="card card-compact outline-2 outline outline-secondary max-w-md h-full items-center">
+        <figure className="w-32 p-8">
           <img
             width="150"
             height="150"
-            className="object-cover w-20 h-20"
-            src="https://cdn.shopify.com/s/files/1/0271/2662/8450/files/Meals_BG.png?v=1701170483"
+            className=""
+            src="https://cdn.shopify.com/s/files/1/0271/2662/8450/files/science.png?v=1613736536"
             alt=""
           />
         </figure>
         <div className="card-body">
-          <h2 className="card-title lowercase">{tag.title}</h2>
-          <p className="w-96">{tag?.description}</p>
+          <h2 className="card-title lowercase text-2xl font-light">
+            {tag.title}
+          </h2>
+          <p className=" w-44">{tag?.description}</p>
         </div>
       </div>
-    </carousel-item>
+    </div>
   );
 }

@@ -15,6 +15,9 @@ import {PRODUCT_QUERY} from './products.$handle';
 import {AddIcon, MinusIcon} from '~/components/Icons';
 import {DesktopCartAside, getAvailabledeliveryInfo} from '~/components/Cart';
 
+import {getTagObjects} from '~/components/Personalisation';
+
+import {redirect} from '@shopify/remix-oxygen';
 /**
  * @type {MetaFunction<typeof loader>}
  */
@@ -31,6 +34,11 @@ export async function loader({request, params, context}) {
   const searchParams = new URLSearchParams(request.url.split('?')[1]);
   const tags = searchParams?.get('tags');
   const sorts = searchParams?.get('sorts');
+  const initState = searchParams?.get('init');
+  const editable = searchParams?.get('offer') === 'true' ? false : true;
+
+  const selectedTags = getTagObjects(tags.split(',') || []);
+  const selectedSorts = getTagObjects(sorts.split(',') || []);
 
   let collection = {
     id: 'gid://shopify/Collection/157328244834',
@@ -75,11 +83,61 @@ export async function loader({request, params, context}) {
     });
   });
 
+  //if init state, then add the first 14 products to the basket
+  if (initState) {
+    const availableProducts = filterUnavailableVariants(
+      perfectForYou(collection.products.nodes),
+      '1 Person',
+    );
+
+    const lines = [];
+    //loop through the first 14 products and add them to the cart. If there is less than 14 products available, then add additional products to make up the 14
+    for (let i = 0; i < 14; i++) {
+      const product = availableProducts[i % availableProducts.length];
+      const variant = product?.variants?.find((variant) => {
+        return variant?.title === '1 Person';
+      });
+      const lineVariantId = `gid://shopify/ProductVariant/${variant?.id}`;
+
+      if (lines.find((line) => line.merchandiseId === lineVariantId)) {
+        lines.find((line) => line.merchandiseId === lineVariantId).quantity++;
+      } else {
+        lines.push({
+          merchandiseId: lineVariantId,
+          quantity: 1,
+        });
+      }
+    }
+
+    //console.log(lines);
+
+    const result = await cart.create({
+      lines: lines,
+      discountCodes: ['PERSONALISEDPLAN20'],
+    });
+
+    const cartResult = result.cart;
+
+    // Update cart id in cookie
+    const headers = cart.setCartId(cartResult.id);
+
+    const newUrl = new URL(request.url);
+    newUrl.searchParams.delete('init');
+    newUrl.searchParams.set('offer', 'true');
+
+    return redirect(newUrl, {
+      headers: headers,
+    });
+  }
+
   return {
     cart: cart.get(),
+    editable,
     collection,
     context,
     cartLines: cartLines?.lines?.nodes,
+    selectedSorts,
+    selectedTags,
   };
 }
 
@@ -87,6 +145,19 @@ function perfectForYou(nodes) {
   return nodes.filter((product) => {
     return (
       product.typeInclude && product.include && product.status === 'active'
+    );
+  });
+}
+
+function filterUnavailableVariants(nodes, variantTitle) {
+  return nodes.filter((product) => {
+    return (
+      product.typeInclude &&
+      product.include &&
+      product.status === 'active' &&
+      product?.variants?.find((variant) => {
+        return variant?.title === variantTitle;
+      })?.available
     );
   });
 }
@@ -101,12 +172,18 @@ function otherMeals(nodes) {
 
 export default function Collection() {
   /** @type {LoaderReturnData} */
-  const {collection, context, cartLines} = useLoaderData();
+  const {
+    collection,
+    context,
+    cartLines,
+    editable,
+    selectedSorts,
+    selectedTags,
+  } = useLoaderData();
   const rootData = useRouteLoaderData('root');
   const {cart, deliveryInfo} = rootData;
 
   const product = null;
-  //console.log(cartLines);
 
   return (
     <>
@@ -115,20 +192,26 @@ export default function Collection() {
           <ProductModal product={product || null} />
         </Await>
       </Suspense>
+      {/* This outlet serves the collection header logic */}
       <Outlet />
-      <section className="flex justify-center py-0">
+      <section className="flex justify-center py-0 max-w-[1690px]  m-auto">
         <div className="lg:grid lg:grid-cols-4">
           <div className="flex flex-col justify-center align-middle items-center gap-8 p-8 max-w-[1690px] lg:col-span-3">
-            <h2 className="lowercase text-3xl font-sans">choose your meals</h2>
-            <h3 className="text-xl text-center">perfect for you</h3>
+            <h2 className="lowercase text-xl md:text-3xl font-sans hidden">
+              choose your meals
+            </h2>
+            <h3 className="text-lg text-center hidden">perfect for you</h3>
 
             <div className="">
               <ProductsGrid
+                editable={editable}
                 products={perfectForYou(collection.products.nodes)}
                 cartLines={cartLines}
+                selectedTags={selectedTags}
+                selectedSorts={selectedSorts}
               />
             </div>
-            <h3 className="text-xl text-center">our other meals</h3>
+            <h3 className="text-lg text-center hidden">our other meals</h3>
             <div className="">
               <ProductsGrid
                 products={otherMeals(collection.products.nodes)}
@@ -151,13 +234,22 @@ export async function action({request, context}) {
 /**
  * @param {{products: ProductItemFragment[]}}
  */
-function ProductsGrid({products, cartLines}) {
+function ProductsGrid({
+  products,
+  cartLines,
+  editable,
+  selectedTags,
+  selectedSorts,
+}) {
   return (
     <div className="grid md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-8">
       {products.map((product, index) => {
         return (
           <ProductItem
             key={product.id}
+            selectedTags={selectedTags}
+            selectedSorts={selectedSorts}
+            editable={editable}
             product={product}
             loading={index < 8 ? 'eager' : undefined}
           />
@@ -173,43 +265,74 @@ function ProductsGrid({products, cartLines}) {
  *   loading?: 'eager' | 'lazy';
  * }}
  */
-function ProductItem({product, loading}) {
+function ProductItem({
+  product,
+  loading,
+  editable,
+  selectedTags,
+  selectedSorts,
+}) {
   //const variant = product.variants[0];
   const variantUrl = ''; //useVariantUrl(product.handle, variant.selectedOptions);
   const fetcher = useFetcher();
 
-  /*
-  function handleOpenModal(handle) {
-    //let x = fetcher.load('/products/' + handle);
-    let x = fetcher.load('/products/' + handle);
-    //let x = fetcher.data('/products/' + handle);
-    console.log(x);
+  const inBasket = product?.variants?.find((variant) => {
+    return variant?.quantity > 0;
+  });
 
-    product != null
-      ? document.getElementById('product_modal').showModal()
-      : document.getElementById('product_modal').close();
-  }
-  */
+  const quantityInBasket = product?.variants?.reduce((total, variant) => {
+    return total + (variant?.quantity || 0);
+  }, 0);
+
+  const badges = [];
+  product?.matchedTags?.map((tag) => {
+    const tagForBadge = selectedTags?.find((selectedTag) => {
+      return selectedTag?.tag === tag;
+    });
+    tagForBadge?.hide || tagForBadge == undefined
+      ? null
+      : badges.push(tagForBadge?.title);
+  });
+  product?.matchedSorts?.map((sort) => {
+    const sortForBadge = selectedSorts?.find((selectedSort) => {
+      return selectedSort?.tag === sort;
+    });
+
+    sortForBadge?.hide || sortForBadge == undefined
+      ? null
+      : badges.push(sortForBadge?.title);
+  });
+
+  const hasAvailableVariants = product?.variants?.find((variant) => {
+    return variant?.available;
+  });
 
   return (
     <>
       <div
-        className="card card-compact bg-white shadow-md"
+        className={
+          (inBasket ? 'outline outline-3 outline-accent' : '') +
+          ' card card-compact bg-white shadow-lg ' +
+          (!editable && !inBasket ? 'hidden' : '')
+        }
         key={'gid://shopify/Product/' + product.id}
         prefetch="intent"
         to={variantUrl}
       >
         <div className="indicator w-full">
-          {product?.variants?.find((variant) => {
-            return variant?.quantity > 0;
-          }) ? (
+          {inBasket ? (
             <span className="indicator-item indicator-center badge badge-accent">
-              in basket
+              {quantityInBasket} in basket
             </span>
           ) : null}
+          {hasAvailableVariants ? null : (
+            <span className="indicator-item indicator-center badge badge-neutral">
+              out of stock
+            </span>
+          )}
           {product.image && (
             <Image
-              className="card"
+              className={'card'}
               alt={product.title}
               aspectRatio="1/1"
               src={product.image}
@@ -236,39 +359,63 @@ function ProductItem({product, loading}) {
               value={product.handle}
             />
           </Link>
-          <div className="flex flex-row gap-4">
-            <span className="badge badge-neutral">{product.calories} kcal</span>
-            <span className="badge badge-neutral">{product.carbs}g carbs</span>
+          <span className="badge badge-neutral">{product.calories} kcal</span>
+          <span className="badge badge-neutral hidden">
+            {product.carbs}g carbs
+          </span>
+          <div className="flex  w-full flex-wrap gap-2 ">
+            {badges?.map((badge) => {
+              return (
+                <div
+                  key={product?.id + badge || 'none'}
+                  className={'tag-pill positive'}
+                >
+                  <span className="text-md lowercase">{badge}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
-        <ProductAddOrChangeButton product={product} />
+
+        <ProductAddOrChangeButton
+          product={product}
+          inBasket={inBasket}
+          editable={editable}
+          disabled={!hasAvailableVariants}
+        />
+
         {/* <ProductAddButtons product={product} variants={product?.variants} />*/}
       </div>
     </>
   );
 }
 
-function ProductAddOrChangeButton({product}) {
+function ProductAddOrChangeButton({product, inBasket, editable, disabled}) {
   const lowestVariantPrice = product?.variants?.reduce((lowest, variant) => {
     return Math.min(lowest, variant.price);
   }, Infinity);
 
-  const inBasket = product?.variants?.find((variant) => {
-    return variant?.quantity > 0;
-  });
-
   return inBasket ? (
-    <div className="card-body">
+    <div className={editable ? 'card-body justify-end' : 'hidden'}>
       <button className="btn btn-neutral shadow-sm btn-outline btn-block text-xl font-light">
         change{' '}
       </button>
     </div>
   ) : (
-    <div className="card-body flex flex-row items-end justify-end">
+    <div
+      className={
+        editable ? 'card-body flex flex-row items-end justify-end' : 'hidden'
+      }
+    >
       <div className="flex items-center justify-between w-full gap-1">
         <span className="font-light">from £{lowestVariantPrice}</span>
-        <button className="btn btn-primary shadow-sm text-xl font-light">
-          add
+        <button
+          className={
+            (disabled ? 'btn-disabled' : '') +
+            ' btn btn-primary shadow-sm text-xl font-light'
+          }
+        >
+          {disabled ? 'out of stock' : 'add'}
         </button>
       </div>
     </div>
