@@ -118,6 +118,15 @@ function PlanReassurance({tags, sorts}) {
     <section className="bg-neutral flex flex-col gap-4 align-middle justify-center items-center w-full">
       <h2 className="text-xl md:text-3xl">personalised for your health</h2>
       <div className="carousel carousel-center gap-8 p-8 space-x-2 bg-neutral  md:justify-center items-stretch  w-[99%]">
+        {tags?.length === 0 && sorts?.length === 0 && (
+          <CarouselItem
+            tag={{
+              title: 'No tags selected',
+              description:
+                'Please take our personalisation quiz to see personalised content',
+            }}
+          ></CarouselItem>
+        )}
         {sorts?.map((sort) => {
           return <CarouselItem key={sort.title} tag={sort}></CarouselItem>;
         })}
@@ -152,7 +161,7 @@ function CarouselItem({tag}) {
         </figure>
         <div className="card-body">
           <h2 className="card-title lowercase text-2xl font-light">
-            {tag.title}
+            {tag?.title}
           </h2>
           <p className=" w-44">{tag?.description}</p>
         </div>

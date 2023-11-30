@@ -31,14 +31,19 @@ export const meta = ({data}) => {
 export async function loader({request, params, context}) {
   const {storefront, cart} = context;
 
-  const searchParams = new URLSearchParams(request.url.split('?')[1]);
+  if (!request?.url?.includes('tags') || !request?.url?.includes('sorts')) {
+    return redirect('/personalised-plan?tags=&sorts=');
+  }
+  const searchParams = new URLSearchParams(request?.url?.split('?')[1] || '');
+
   const tags = searchParams?.get('tags');
   const sorts = searchParams?.get('sorts');
   const initState = searchParams?.get('init');
-  const editable = searchParams?.get('offer') === 'true' ? false : true;
 
-  const selectedTags = getTagObjects(tags.split(',') || []);
-  const selectedSorts = getTagObjects(sorts.split(',') || []);
+  const editable = searchParams?.get('offer') == 'true' ? false : true;
+
+  const selectedTags = getTagObjects(tags?.split(',') || []);
+  const selectedSorts = getTagObjects(sorts?.split(',') || []);
 
   let collection = {
     id: 'gid://shopify/Collection/157328244834',
@@ -359,7 +364,15 @@ function ProductItem({
               value={product.handle}
             />
           </Link>
-          <span className="badge badge-neutral">{product.calories} kcal</span>
+          {badges?.map((badge) => {
+            if (badge?.includes('Calorie')) {
+              return (
+                <span className="badge badge-neutral">
+                  {product?.calories} kcal
+                </span>
+              );
+            }
+          })}
           <span className="badge badge-neutral hidden">
             {product.carbs}g carbs
           </span>
