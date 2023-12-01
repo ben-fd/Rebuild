@@ -42,9 +42,7 @@ export function Layout({
       </section>
       */}
       <section className="flex justify-center py-0">
-        <div className="lg:grid lg:grid-cols-4">
-          <main className="w-screen lg:col-span-4">{children}</main>
-        </div>
+        <main className="w-screen">{children}</main>
       </section>
 
       <Suspense>

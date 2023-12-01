@@ -1,8 +1,13 @@
-import {annotate} from 'rough-notation';
 import {useLoaderData, Await} from '@remix-run/react';
 import {Suspense, useEffect} from 'react';
 import {getTagObjects} from '~/components/Personalisation';
 import {useRouteLoaderData} from '@remix-run/react';
+import {Script} from '@shopify/hydrogen';
+import {
+  BannerSection,
+  PinkHighlight,
+  HeadingStacked,
+} from '~/components/PageUtils';
 
 export async function loader({request, params, context}) {
   const searchParams = new URLSearchParams(request.url.split('?')[1]);
@@ -64,25 +69,19 @@ function YourRecommendedPlan({cart}) {
                 Number(cart?.cost?.subtotalAmount?.amount) -
                 Number(cart?.cost?.totalAmount?.amount);
 
-              useEffect(() => {
-                const bracketsTitle = document.getElementById('bracketsTitle');
-                const annotation = annotate(bracketsTitle, {
-                  type: 'highlight',
-                  color: '#FDC9CB4d',
-                  strokeWidth: 2,
-                });
-                annotation.show();
-              }, []);
               return (
                 <div className="flex flex-col gap-2">
-                  <h1 className="text-4xl md:text-5xl leading-normal md:leading-relaxed font-thin text-center md:text-left">
+                  <HeadingStacked>
                     <span>your </span>
-                    <span id="bracketsTitle" className="font-bold">
-                      personalised
-                    </span>
+                    <PinkHighlight>personalised</PinkHighlight>
                     <br />{' '}
-                    <span>14 meal plan for only £{costPerMeal}/meal</span>
-                  </h1>
+                    <span>
+                      {cart?.totalQuantity > 0
+                        ? '14 meal plan for only £' + costPerMeal
+                        : '14 meal plan from £5.59/meal'}
+                      /meal
+                    </span>
+                  </HeadingStacked>
 
                   <ul className="list-none md:list-disc md:list-inside text-lg">
                     <li className="text-center md:text-left list-item">
@@ -135,13 +134,6 @@ function PlanReassurance({tags, sorts}) {
         })}
       </div>
       <div></div>
-    </section>
-  );
-}
-function BannerSection({children}) {
-  return (
-    <section className=" bg-cover bg-hero-texture bg-no-repeat w-full">
-      <div className="p-8">{children}</div>
     </section>
   );
 }

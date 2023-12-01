@@ -2,22 +2,24 @@ import {
   useLoaderData,
   Link,
   useFetcher,
-  Await,
   useFetchers,
   Outlet,
   useRouteLoaderData,
+  useNavigate,
+  useLocation,
+  useNavigation,
 } from '@remix-run/react';
-import {Suspense, useEffect, useState} from 'react';
-import {Image, Money, CartForm} from '@shopify/hydrogen';
+import {useEffect, useState} from 'react';
+import {Image, CartForm} from '@shopify/hydrogen';
 import {processProductTitle} from '~/components/Cart';
 import ProductModal, {loadProductDataByFetch} from '~/components/ProductModal';
-import {PRODUCT_QUERY} from './products.$handle';
 import {AddIcon, MinusIcon} from '~/components/Icons';
 import {DesktopCartAside, getAvailabledeliveryInfo} from '~/components/Cart';
 
 import {getTagObjects} from '~/components/Personalisation';
 
 import {redirect} from '@shopify/remix-oxygen';
+import {PageContainer} from '~/components/PageUtils';
 /**
  * @type {MetaFunction<typeof loader>}
  */
@@ -39,8 +41,6 @@ export async function loader({request, params, context}) {
   const tags = searchParams?.get('tags');
   const sorts = searchParams?.get('sorts');
   const initState = searchParams?.get('init');
-
-  const editable = searchParams?.get('offer') == 'true' ? false : true;
 
   const selectedTags = getTagObjects(tags?.split(',') || []);
   const selectedSorts = getTagObjects(sorts?.split(',') || []);
@@ -114,8 +114,6 @@ export async function loader({request, params, context}) {
       }
     }
 
-    //console.log(lines);
-
     const result = await cart.create({
       lines: lines,
       discountCodes: ['PERSONALISEDPLAN20'],
@@ -128,18 +126,23 @@ export async function loader({request, params, context}) {
 
     const newUrl = new URL(request.url);
     newUrl.searchParams.delete('init');
-    newUrl.searchParams.set('offer', 'true');
+
+    console.log('Init state passing cart');
 
     return redirect(newUrl, {
       headers: headers,
     });
   }
 
+  const currentUrl = new URL(request.url);
+  const handleInUrl = currentUrl.searchParams.get('productModal');
+  const productModal = await loadProductDataByFetch(handleInUrl, storefront);
+
   return {
     cart: cart.get(),
-    editable,
     collection,
     context,
+    productModal,
     cartLines: cartLines?.lines?.nodes,
     selectedSorts,
     selectedTags,
@@ -180,34 +183,49 @@ export default function Collection() {
   const {
     collection,
     context,
+    productModal,
     cartLines,
-    editable,
     selectedSorts,
     selectedTags,
   } = useLoaderData();
+
   const rootData = useRouteLoaderData('root');
   const {cart, deliveryInfo} = rootData;
 
-  const product = null;
+  const location = useLocation();
+
+  const [editable, setEditable] = useState(
+    location.pathname?.includes('offer') ? false : true,
+  );
+
+  useEffect(() => {
+    if (location.pathname?.includes('offer')) {
+      setEditable(false);
+    } else {
+      setEditable(true);
+    }
+  }, [location]);
+
+  useEffect(() => {
+    productModal?.product != null
+      ? document.getElementById('product_modal').showModal()
+      : document.getElementById('product_modal').close();
+  }, [productModal]);
 
   return (
     <>
-      <Suspense fallback={<></>}>
-        <Await resolve={product}>
-          <ProductModal product={product || null} />
-        </Await>
-      </Suspense>
+      <ProductModal product={productModal?.product || null} />
       {/* This outlet serves the collection header logic */}
       <Outlet />
-      <section className="flex justify-center py-0 max-w-[1690px]  m-auto">
+      <PageContainer>
         <div className="lg:grid lg:grid-cols-4">
-          <div className="flex flex-col justify-center align-middle items-center gap-8 p-8 max-w-[1690px] lg:col-span-3">
+          <div className="flex flex-col justify-center align-middle items-center gap-16 p-8 max-w-[1690px] lg:col-span-3">
             <h2 className="lowercase text-xl md:text-3xl font-sans hidden">
               choose your meals
             </h2>
             <h3 className="text-lg text-center hidden">perfect for you</h3>
 
-            <div className="">
+            <div id="mainGrid" className="">
               <ProductsGrid
                 editable={editable}
                 products={perfectForYou(collection.products.nodes)}
@@ -216,18 +234,22 @@ export default function Collection() {
                 selectedSorts={selectedSorts}
               />
             </div>
-            <h3 className="text-lg text-center hidden">our other meals</h3>
-            <div className="">
-              <ProductsGrid
-                products={otherMeals(collection.products.nodes)}
-                cartLines={cartLines}
-              />
-            </div>
+            {editable && (
+              <>
+                <h3 className="text-lg text-center hidden">our other meals</h3>
+                <div className="hidden">
+                  <ProductsGrid
+                    products={otherMeals(collection.products.nodes)}
+                    cartLines={cartLines}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           <DesktopCartAside cart={cart} deliveryInfo={deliveryInfo} />
         </div>
-      </section>
+      </PageContainer>
     </>
   );
 }
@@ -246,6 +268,7 @@ function ProductsGrid({
   selectedTags,
   selectedSorts,
 }) {
+  const navigate = useNavigate();
   return (
     <div className="grid md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-8">
       {products.map((product, index) => {
@@ -260,6 +283,31 @@ function ProductsGrid({
           />
         );
       })}
+      <div
+        className={
+          editable ? 'hidden' : 'card card-compact card-bordered glass'
+        }
+      >
+        <div className="card-body">
+          <h2 className="text-xl">want to edit your selection?</h2>
+          <p>
+            choose from <strong>{products?.length} meals</strong> matching your
+            health goals, plus many more.
+          </p>
+          <button
+            className="btn btn-block btn-secondary text-xl font-light"
+            onClick={() => {
+              function scrollTo(hash) {
+                location.hash = '#' + hash;
+              }
+              const newUrl = new URL(window.location.href);
+              navigate(newUrl.pathname.replace('/offer', '') + newUrl.search);
+            }}
+          >
+            edit meals
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -279,7 +327,6 @@ function ProductItem({
 }) {
   //const variant = product.variants[0];
   const variantUrl = ''; //useVariantUrl(product.handle, variant.selectedOptions);
-  const fetcher = useFetcher();
 
   const inBasket = product?.variants?.find((variant) => {
     return variant?.quantity > 0;
@@ -290,6 +337,7 @@ function ProductItem({
   }, 0);
 
   const badges = [];
+
   product?.matchedTags?.map((tag) => {
     const tagForBadge = selectedTags?.find((selectedTag) => {
       return selectedTag?.tag === tag;
@@ -298,6 +346,7 @@ function ProductItem({
       ? null
       : badges.push(tagForBadge?.title);
   });
+
   product?.matchedSorts?.map((sort) => {
     const sortForBadge = selectedSorts?.find((selectedSort) => {
       return selectedSort?.tag === sort;
@@ -311,6 +360,10 @@ function ProductItem({
   const hasAvailableVariants = product?.variants?.find((variant) => {
     return variant?.available;
   });
+
+  const location = useLocation();
+  const modalLink =
+    location.pathname + location.search + '&productModal=' + product?.handle;
 
   return (
     <>
@@ -336,27 +389,34 @@ function ProductItem({
             </span>
           )}
           {product.image && (
-            <Image
-              className={'card'}
-              alt={product.title}
-              aspectRatio="1/1"
-              src={product.image}
-              loading={loading}
-              sizes="(min-width: 45em) 400px, 100vw"
-            />
+            <Link
+              className=""
+              preventScrollReset={true}
+              prefetch="viewport"
+              to={modalLink}
+            >
+              <Image
+                className={'card'}
+                alt={product.title}
+                aspectRatio="1/1"
+                src={product.image}
+                loading={loading}
+                width="400px"
+                sizes="400px"
+              />
+            </Link>
           )}
         </div>
         <div className="card-body">
           <Link
             className=""
+            preventScrollReset={true}
             prefetch="viewport"
-            to={`/products/${product.handle}`}
+            to={modalLink}
           >
             <h3 className=" font-light lowercase text-lg">
               {processProductTitle(product.title)}
             </h3>
-            <input type="hidden" name="tags" value={''} />
-            <input type="hidden" name="sorts" value={''} />
             <input
               type="hidden"
               id={product.handle}
@@ -391,6 +451,7 @@ function ProductItem({
         </div>
 
         <ProductAddOrChangeButton
+          modalLink={modalLink}
           product={product}
           inBasket={inBasket}
           editable={editable}
@@ -403,7 +464,13 @@ function ProductItem({
   );
 }
 
-function ProductAddOrChangeButton({product, inBasket, editable, disabled}) {
+function ProductAddOrChangeButton({
+  product,
+  inBasket,
+  editable,
+  disabled,
+  modalLink,
+}) {
   const lowestVariantPrice = product?.variants?.reduce((lowest, variant) => {
     return Math.min(lowest, variant.price);
   }, Infinity);
@@ -422,19 +489,22 @@ function ProductAddOrChangeButton({product, inBasket, editable, disabled}) {
     >
       <div className="flex items-center justify-between w-full gap-1">
         <span className="font-light">from £{lowestVariantPrice}</span>
-        <button
+        <Link
+          to={modalLink}
+          preventScrollReset={true}
+          prefetch="viewport"
           className={
             (disabled ? 'btn-disabled' : '') +
             ' btn btn-primary shadow-sm text-xl font-light'
           }
         >
           {disabled ? 'out of stock' : 'add'}
-        </button>
+        </Link>
       </div>
     </div>
   );
 }
-
+/* legacy */
 function ProductAddButtons({product, variants}) {
   return (
     <div className="p-4 flex flex-col gap-2">
@@ -458,6 +528,7 @@ function ProductAddButtons({product, variants}) {
   );
 }
 
+/* legacy */
 function VariantAddButton({variant}) {
   const [quantity, setQuantity] = useState(variant?.quantity || 0);
 

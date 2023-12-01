@@ -109,7 +109,7 @@ function CartLineItem({layout, line}) {
         <Link
           prefetch="intent"
           to={lineItemUrl}
-          className=" text-md lowercase"
+          className=" text-lg lowercase  font-normal"
           onClick={() => {
             if (layout === 'aside') {
               // close the drawer
@@ -350,9 +350,13 @@ export function CartDiscounts({discountCodes}) {
 
 export function CartMainPane({count, cart, deliveryInfo, layout, children}) {
   return (
-    <div className="shadow-2xl 2xl:shadow-none bg-white 2xl:bg-transparent  z-30 top-0 bottom-0  sticky h-screen  2xl:h-[calc(100vh-64px)]">
+    <div className="shadow-2xl 2xl:shadow-none bg-white 2xl:bg-transparent  z-30 top-0 bottom-0  sticky h-screen  2xl:h-[calc(100vh-8px)]">
       <div className="bg-white card-compact gap-4">
-        <div className="card-body justify-between h-[calc(100vh-64px)] flex flex-col gap-4">
+        <div
+          className={
+            'card-body justify-between flex flex-col gap-4 h-[calc(100vh-8px)]'
+          }
+        >
           <h2 className="text-xl">your order</h2>
           <CartDeliverySettings
             cart={cart}

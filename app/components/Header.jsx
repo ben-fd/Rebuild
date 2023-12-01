@@ -1,4 +1,4 @@
-import {Await, NavLink} from '@remix-run/react';
+import {Await, NavLink, useLocation} from '@remix-run/react';
 import {Suspense} from 'react';
 import {useRootLoaderData} from '~/root';
 import {Image, Money} from '@shopify/hydrogen';
@@ -16,12 +16,15 @@ import {Link} from '@remix-run/react';
  */
 export function Header({header, isLoggedIn, cart, deliveryInfo}) {
   const {shop, menu} = header;
+  const location = useLocation();
+
+  const hideNavigation = location.pathname.includes('personalised-plan');
   return (
     <header>
       <div className="bg-secondary shadow-xl navbar sticky lg:relative top-0 md:px-4 z-30 lg:h-4 flex justify-center">
         <nav className="navbar lg:relative z-30 max-w-[1690px]">
           <div className="navbar-start">
-            <div className="dropdown">
+            <div className="dropdown dropdown-hover">
               <label tabIndex={0} className="btn btn-ghost">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -51,11 +54,11 @@ export function Header({header, isLoggedIn, cart, deliveryInfo}) {
               className="image-full"
               end
             >
-              <Image data={shop.brand.logo.image} sizes="120px" />
+              <Image data={shop.brand.logo.image} width="120" sizes="120px" />
             </NavLink>
           </div>
 
-          <div className="navbar-center">
+          <div className={hideNavigation ? 'hidden' : 'navbar-center'}>
             <div className="hidden lg:flex">
               <HeaderMenu
                 menu={menu}
@@ -65,7 +68,7 @@ export function Header({header, isLoggedIn, cart, deliveryInfo}) {
             </div>
           </div>
 
-          <div className="navbar-end">
+          <div className={'navbar-end'}>
             <HeaderCtas
               isLoggedIn={isLoggedIn}
               cart={cart}
@@ -96,13 +99,15 @@ export function HeaderMenu({menu, primaryDomainUrl, viewport}) {
     }
   }
 
-  const navClass =
-    viewport == 'mobile'
-      ? 'menu menu-sm dropdown-content mt-3 z-50 p-2 shadow bg-base-100 rounded-box w-52'
-      : 'menu menu-horizontal px-1';
-
   return (
-    <ul tabIndex={0} className={navClass}>
+    <ul
+      tabIndex={0}
+      className={
+        viewport == 'mobile'
+          ? 'menu  menu-lg dropdown-content z-50 p-2 shadow bg-base-100 rounded-box w-52'
+          : 'menu menu-horizontal px-1'
+      }
+    >
       {(menu || FALLBACK_HEADER_MENU).items.map((item) => {
         if (!item.url) return null;
 
@@ -111,20 +116,20 @@ export function HeaderMenu({menu, primaryDomainUrl, viewport}) {
         const url = stripURLDomain(item, publicStoreDomain, primaryDomainUrl);
 
         return !hasSubmenu ? (
-          <li key={viewport + item.id + 'single'}>
+          <li key={viewport + item.id + 'single'} className="m-1">
             <NavLink
               end
               onClick={closeAside}
               style={activeLinkStyle}
               to={url}
-              className="lowercase"
+              className="lowercase text-lg font-light"
             >
               {item.title}
             </NavLink>
           </li>
         ) : (
           <li
-            className="dropdown dropdown-end"
+            className="dropdown dropdown-end m-0"
             key={viewport + item.id + 'parent'}
           >
             {viewport == 'desktop' ? (
@@ -135,7 +140,7 @@ export function HeaderMenu({menu, primaryDomainUrl, viewport}) {
                     onClick={closeAside}
                     style={activeLinkStyle}
                     to={url}
-                    className="lowercase"
+                    className="lowercase text-lg"
                   >
                     {item.title}
                   </NavLink>
@@ -157,7 +162,7 @@ export function HeaderMenu({menu, primaryDomainUrl, viewport}) {
                           onClick={closeAside}
                           style={activeLinkStyle}
                           to={subItemUrl}
-                          className="lowercase"
+                          className="lowercase text-lg"
                         >
                           {subitem.title}
                         </NavLink>
@@ -174,7 +179,7 @@ export function HeaderMenu({menu, primaryDomainUrl, viewport}) {
                     onClick={closeAside}
                     style={activeLinkStyle}
                     to={url}
-                    className="lowercase"
+                    className="lowercas"
                   >
                     {item.title}
                   </NavLink>
@@ -193,7 +198,7 @@ export function HeaderMenu({menu, primaryDomainUrl, viewport}) {
                           onClick={closeAside}
                           style={activeLinkStyle}
                           to={subItemUrl}
-                          className="lowercase"
+                          className="lowercase text-lg"
                         >
                           {subitem.title}
                         </NavLink>
@@ -223,16 +228,19 @@ function stripURLDomain(item, publicStoreDomain, primaryDomainUrl) {
  */
 function HeaderCtas({isLoggedIn, cart, deliveryInfo}) {
   return (
-    <nav className="header-ctas" role="navigation">
+    <nav
+      className=" flex flex-row gap-2 justify-center items-center"
+      role="navigation"
+    >
       <NavLink
-        className="lowercase"
+        className="btn btn-ghost text-lg font-light lowercase"
         prefetch="intent"
         to="/account"
         style={activeLinkStyle}
       >
         {isLoggedIn ? 'Account' : 'Sign in'}
       </NavLink>
-      <SearchToggle />
+      {/*<SearchToggle />*/}
       <CartToggle cart={cart} deliveryInfo={deliveryInfo} />
     </nav>
   );
@@ -247,7 +255,7 @@ function SearchToggle() {
  */
 function CartHeader({count, cart, deliveryInfo}) {
   return (
-    <div className="drawer drawer-end lg:hidden">
+    <div className="drawer drawer-end">
       <input id="cart-drawer" type="checkbox" className="drawer-toggle" />
       <div className="drawer-content">
         <label
