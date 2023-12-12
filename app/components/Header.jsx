@@ -288,14 +288,16 @@ function CartHeader({count, cart, deliveryInfo}) {
           aria-label="close sidebar"
           className="drawer-overlay"
         ></label>
-        <CartMainPane
-          cart={cart}
-          count={count}
-          deliveryInfo={deliveryInfo}
-          layout={'mobile'}
-        >
-          <CartLines lines={cart?.lines} layout={'aside'} />
-        </CartMainPane>
+        <div className="max-w-[90%] w-full">
+          <CartMainPane
+            cart={cart}
+            count={count}
+            deliveryInfo={deliveryInfo}
+            layout={'mobile'}
+          >
+            <CartLines lines={cart?.lines} layout={'aside'} />
+          </CartMainPane>
+        </div>
       </div>
     </div>
   );

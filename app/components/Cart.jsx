@@ -348,6 +348,11 @@ export function CartDiscounts({discountCodes}) {
   );
 }
 
+const animVariants = {
+  visible: {opacity: 1, x: 0},
+  closed: {opacity: 0, x: '-100%'},
+};
+
 export function CartMainPane({count, cart, deliveryInfo, layout, children}) {
   return (
     <div className="shadow-2xl 2xl:shadow-none bg-white 2xl:bg-transparent  z-30 top-0 bottom-0  sticky h-screen  2xl:h-[calc(100vh-8px)]">
@@ -378,7 +383,7 @@ export function CartMainPane({count, cart, deliveryInfo, layout, children}) {
 
 export function DesktopCartAside({cart, deliveryInfo}) {
   return (
-    <aside className="hidden lg:block col-span-1 bg-white border border-l-gray-300 ">
+    <aside className="hidden lg:block col-span-1 bg-white border border-l-gray-300">
       <Suspense fallback={<p>Loading cart ...</p>}>
         <Await resolve={cart}>
           {(cart) => {

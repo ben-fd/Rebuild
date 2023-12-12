@@ -15,6 +15,10 @@
   background: #35ce7c;
 }
 
+.negative:before {
+  background: lightsalmon;
+}
+
 link {
   display: none;
   height: 0px;

@@ -284,7 +284,11 @@ export const tagMappings = [
     filter_type: 'sorts',
     typeform: 'immune',
     group: 'health goal',
+    icon_summary: true,
     not_rule: false,
+    alt: 'immunity',
+    image_url:
+      'https://cdn.shopify.com/s/files/1/0271/2662/8450/files/Field_Doctor_Health_Icons_Immunity.png?v=1702288072',
   },
   {
     title: 'Maintain Bones',
@@ -292,7 +296,11 @@ export const tagMappings = [
     filter_type: 'sorts',
     typeform: 'bones',
     group: 'health goal',
+    icon_summary: true,
     not_rule: false,
+    alt: 'bones',
+    image_url:
+      'https://cdn.shopify.com/s/files/1/0271/2662/8450/files/Field_Doctor_Health_Icons_Bones.png?v=1702288072',
   },
   {
     title: 'Maintain Muscle',
@@ -301,7 +309,11 @@ export const tagMappings = [
     typeform: 'muscle',
     description: 'meals with a higher protein content',
     group: 'health goal',
+    icon_summary: true,
     not_rule: false,
+    alt: 'muscle',
+    image_url:
+      'https://cdn.shopify.com/s/files/1/0271/2662/8450/files/Field_Doctor_Health_Icons_Muscles.png?v=1702288071',
   },
   {
     title: 'Reduce Tiredness or Fatigue',
@@ -309,7 +321,11 @@ export const tagMappings = [
     filter_type: 'sorts',
     typeform: 'fatigue',
     group: 'health goal',
+    icon_summary: true,
     not_rule: false,
+    alt: 'energy',
+    image_url:
+      'https://cdn.shopify.com/s/files/1/0271/2662/8450/files/Field_Doctor_Health_Icons_Energy.png?v=1702288072',
   },
   {
     title: 'Maintain Vision',
@@ -317,7 +333,11 @@ export const tagMappings = [
     filter_type: 'sorts',
     typeform: 'vision',
     group: 'health goal',
+    icon_summary: true,
     not_rule: false,
+    alt: 'eye',
+    image_url:
+      'https://cdn.shopify.com/s/files/1/0271/2662/8450/files/Field_Doctor_Health_Icons_Eye.png?v=1702288072',
   },
   {
     title: 'Support Psychological Function',
@@ -325,8 +345,20 @@ export const tagMappings = [
     filter_type: 'sorts',
     typeform: 'psychological',
     group: 'health goal',
+    icon_summary: true,
     not_rule: false,
+    alt: 'brain',
+    image_url:
+      'https://cdn.shopify.com/s/files/1/0271/2662/8450/files/Field_Doctor_Health_Icons_Brain.png?v=1702288072',
   },
+];
+
+export const rangeSettings = [
+  {title: 'Low FODMAP', colour: 'bg-[#089fdf]'},
+  {title: 'Lean + Lighter', colour: 'bg-[#d1757f]'},
+  {title: 'Mediterranean', colour: 'bg-[#e1eab2]'},
+  {title: 'Cake', colour: 'bg-[#f7db83]'},
+  {title: 'Porridge', colour: 'bg-[#f7db83]'},
 ];
 
 export function getTagObjects(tags) {

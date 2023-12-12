@@ -1,13 +1,15 @@
 import {
   useLoaderData,
   Link,
-  useFetcher,
   useFetchers,
   Outlet,
   useRouteLoaderData,
   useNavigate,
   useLocation,
   useNavigation,
+  NavLink,
+  useFetcher,
+  useSearchParams,
 } from '@remix-run/react';
 import {useEffect, useState} from 'react';
 import {Image, CartForm} from '@shopify/hydrogen';
@@ -19,7 +21,47 @@ import {DesktopCartAside, getAvailabledeliveryInfo} from '~/components/Cart';
 import {getTagObjects} from '~/components/Personalisation';
 
 import {redirect} from '@shopify/remix-oxygen';
-import {PageContainer} from '~/components/PageUtils';
+import {
+  PageContainer,
+  PageContentContainer,
+  PageFullBleedContainer,
+} from '~/components/PageUtils';
+
+import {dropIn} from '~/components/animations';
+
+import {motion} from 'framer-motion';
+
+const collections = [
+  {
+    title: 'all meals',
+    tag: '',
+    handle: 'all',
+    description: null,
+    grouped: true,
+  },
+  {
+    title: 'mediterranean',
+    tag: 'diet-Mediterranean',
+    handle: 'mediterranean',
+    description:
+      'Meals based on the Mediterranean Diet and contain extra virgin olive oil, nuts, seeds, vegetables, whole grains and legumes.',
+  },
+  {
+    title: 'low fodmap',
+    tag: 'diet-Low FODMAP',
+    handle: 'low-fodmap',
+    description:
+      '<p>All our low FODMAP meals have been certified to be low FODMAP by the experts at Monash University.<br/>One serving of a meal made in accordance with this recipe is low in FODMAPs and can assist with following the Monash University Low FODMAP diet™️.</p>',
+  },
+  {
+    title: 'weight management',
+    tag: 'lean-lighter',
+    handle: 'weight-management',
+    description:
+      '<400 kcal meals with less than 40g of carbohydrate, high protein, low fat, low sugar and a source of fibre to support your weight loss goals, as part of a healthy balanced lifestyle',
+  },
+  {title: 'gluten free', tag: 'free-gluten', handle: 'gluten-free'},
+];
 /**
  * @type {MetaFunction<typeof loader>}
  */
@@ -34,7 +76,7 @@ export async function loader({request, params, context}) {
   const {storefront, cart} = context;
 
   if (!request?.url?.includes('tags') || !request?.url?.includes('sorts')) {
-    return redirect('/personalised-plan?tags=&sorts=');
+    return redirect('/shop?tags=&sorts=');
   }
   const searchParams = new URLSearchParams(request?.url?.split('?')[1] || '');
 
@@ -57,8 +99,20 @@ export async function loader({request, params, context}) {
     },
   };
 
-  await fetch(
-    `https://personalisation-app-editable-b4fb26afb290.herokuapp.com/plan?tags=${tags}&sorts=${sorts}`,
+  /*
+
+  const collectionRoute = collections?.find((coll) => {
+    return coll.handle == null
+      ? null
+      : request.url.toLowerCase().includes(coll?.handle);
+  });
+
+  console.log('collectionRoute', collectionRoute);
+
+  const collectionPromise = fetch(
+    `https://personalisation-app-editable-b4fb26afb290.herokuapp.com/plan?tags=${
+      (collectionRoute ? collectionRoute?.tag + ',' : '') + tags
+    }&sorts=${sorts}`,
     {
       method: 'GET',
       headers: {
@@ -66,11 +120,19 @@ export async function loader({request, params, context}) {
         Accept: 'application/json',
       },
     },
-  )
+  );
+
+  collection.products.nodes = await collectionPromise
     .then((res) => res.json())
     .then((data) => {
-      collection.products.nodes = data?.sortedProducts;
+      return data?.sortedProducts;
     });
+    */
+
+  //
+  const collectionResponse = await getCollectionRoute(request.url, collection);
+
+  collection = collectionResponse.collection;
 
   const cartLines = await cart.get();
 
@@ -127,8 +189,6 @@ export async function loader({request, params, context}) {
     const newUrl = new URL(request.url);
     newUrl.searchParams.delete('init');
 
-    console.log('Init state passing cart');
-
     return redirect(newUrl, {
       headers: headers,
     });
@@ -138,15 +198,126 @@ export async function loader({request, params, context}) {
   const handleInUrl = currentUrl.searchParams.get('productModal');
   const productModal = await loadProductDataByFetch(handleInUrl, storefront);
 
+  if (productModal) {
+    const productModalId = productModal?.product?.id.replace(
+      'gid://shopify/Product/',
+      '',
+    );
+
+    productModal.product.variants =
+      collection?.products?.nodes?.find((collProduct) => {
+        return collProduct.id.toString().includes(productModalId);
+      })?.variants || [];
+  }
+
+  if (!request?.url.includes('offer') && collection?.grouped) {
+    let grouped = collection.products.nodes.reduce((acc, product) => {
+      const product_type = product?.product_type;
+      // reduce the products into an object with the product type as the key
+      acc[product_type] = acc[product_type] || [];
+      acc[product_type].push(product);
+      return acc;
+    }, {});
+
+    collection.products.groups = Object.keys(grouped).map((key) => {
+      return {
+        title: key,
+        products: grouped[key],
+      };
+    });
+  }
+
   return {
     cart: cart.get(),
     collection,
+    collections,
     context,
     productModal,
     cartLines: cartLines?.lines?.nodes,
     selectedSorts,
     selectedTags,
   };
+}
+
+async function getCollectionRoute(requestUrl, collection) {
+  const collectionRoute =
+    collections?.find((coll) => {
+      return coll.handle == null
+        ? null
+        : requestUrl.toLowerCase().includes(coll?.handle);
+    }) || collections[0];
+
+  const searchParams = new URLSearchParams(requestUrl.split('?')[1]);
+  const tags = searchParams.get('tags');
+  const sorts = searchParams.get('sorts');
+
+  const collectionPromise = await fetch(
+    `https://personalisation-app-editable-b4fb26afb290.herokuapp.com/plan?tags=${
+      (collectionRoute ? collectionRoute?.tag + ',' : '') + tags
+    }&sorts=${sorts}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+    },
+  )
+    .then((res) => res.json())
+    .then((data) => {
+      return data?.sortedProducts;
+    });
+
+  collection.products.nodes = collectionPromise;
+  collection.title = collectionRoute?.title;
+  collection.description = collectionRoute?.description;
+  collection.grouped = collectionRoute?.grouped || false;
+
+  return {
+    collection,
+  };
+}
+
+function CollectionsMenu({collections}) {
+  const location = useLocation();
+  return (
+    <div
+      className={
+        location.pathname.includes('offer')
+          ? 'hidden'
+          : 'carousel carousel-center space-x-4 w-full p-4 rounded-full outline outline-1 outline-secondary'
+      }
+    >
+      {collections?.map((collection) => {
+        return (
+          <div key={'link' + collection?.handle} className="carousel-item">
+            <CollectionsLink collection={collection}></CollectionsLink>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function activeLinkStyle({isActive, isPending}) {
+  return {
+    fontWeight: isActive ? 'bold' : undefined,
+    color: isPending ? 'grey' : 'black',
+  };
+}
+
+function CollectionsLink({collection}) {
+  const location = useLocation();
+  return (
+    <NavLink
+      reloadDocument
+      style={activeLinkStyle}
+      to={'/shop/' + collection?.handle + '?tags=&sorts='}
+      className={'link link-hover'}
+    >
+      {collection?.title}
+    </NavLink>
+  );
 }
 
 function perfectForYou(nodes) {
@@ -182,11 +353,11 @@ export default function Collection() {
   /** @type {LoaderReturnData} */
   const {
     collection,
-    context,
     productModal,
     cartLines,
     selectedSorts,
     selectedTags,
+    collections,
   } = useLoaderData();
 
   const rootData = useRouteLoaderData('root');
@@ -197,6 +368,8 @@ export default function Collection() {
   const [editable, setEditable] = useState(
     location.pathname?.includes('offer') ? false : true,
   );
+
+  const [selectedCollection, setSelectedCollection] = useState(collection);
 
   useEffect(() => {
     if (location.pathname?.includes('offer')) {
@@ -219,37 +392,88 @@ export default function Collection() {
       <Outlet />
       <PageContainer>
         <div className="lg:grid lg:grid-cols-4">
-          <div className="flex flex-col justify-center align-middle items-center gap-16 p-8 max-w-[1690px] lg:col-span-3">
-            <h2 className="lowercase text-xl md:text-3xl font-sans hidden">
-              choose your meals
-            </h2>
-            <h3 className="text-lg text-center hidden">perfect for you</h3>
-
+          <PageContentContainer>
+            <CollectionsMenu collections={collections}></CollectionsMenu>
+            <div className="flex flex-col gap-2 text-center">
+              <h1 className="text-3xl font-light">
+                {selectedCollection?.title}
+              </h1>
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: selectedCollection?.description,
+                }}
+              ></div>
+            </div>
+            <h3
+              className={selectedTags != '' ? 'text-xl text-center' : 'hidden'}
+            >
+              perfect for you
+            </h3>
             <div id="mainGrid" className="">
               <ProductsGrid
                 editable={editable}
-                products={perfectForYou(collection.products.nodes)}
+                products={perfectForYou(selectedCollection?.products.nodes)}
                 cartLines={cartLines}
                 selectedTags={selectedTags}
                 selectedSorts={selectedSorts}
               />
             </div>
-            {editable && (
+            {editable && (collection?.tag == '' || !collection?.tag) && (
               <>
-                <h3 className="text-lg text-center hidden">our other meals</h3>
-                <div className="hidden">
+                <h3 className="text-xl text-center">our other meals</h3>
+                <div className="">
                   <ProductsGrid
-                    products={otherMeals(collection.products.nodes)}
+                    editable={editable}
+                    products={otherMeals(selectedCollection?.products.nodes)}
                     cartLines={cartLines}
+                    selectedTags={selectedTags}
+                    selectedSorts={selectedSorts}
                   />
                 </div>
               </>
             )}
-          </div>
+          </PageContentContainer>
 
           <DesktopCartAside cart={cart} deliveryInfo={deliveryInfo} />
         </div>
       </PageContainer>
+      <PageFullBleedContainer>
+        <h2 className="text-3xl font-light">FAQs</h2>
+
+        <div className="max-w-xl w-full flex flex-col gap-2 p-8">
+          <div className="collapse collapse-arrow bg-white">
+            <input
+              type="radio"
+              name="my-accordion-2"
+              defaultChecked="checked"
+            />
+            <div className="collapse-title text-xl">
+              Click to open this one and close others
+            </div>
+            <div className="collapse-content">
+              <p>hello</p>
+            </div>
+          </div>
+          <div className="collapse collapse-arrow bg-white ">
+            <input type="radio" name="my-accordion-2" />
+            <div className="collapse-title text-xl">
+              Click to open this one and close others
+            </div>
+            <div className="collapse-content">
+              <p>hello</p>
+            </div>
+          </div>
+          <div className="collapse collapse-arrow bg-white">
+            <input type="radio" name="my-accordion-2" />
+            <div className="collapse-title text-xl">
+              Click to open this one and close others
+            </div>
+            <div className="collapse-content">
+              <p>hello</p>
+            </div>
+          </div>
+        </div>
+      </PageFullBleedContainer>
     </>
   );
 }
@@ -268,13 +492,13 @@ function ProductsGrid({
   selectedTags,
   selectedSorts,
 }) {
-  const navigate = useNavigate();
   return (
-    <div className="grid md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+    <div className="grid md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-8 pb-8">
       {products.map((product, index) => {
         return (
           <ProductItem
             key={product.id}
+            cartLines={cartLines}
             selectedTags={selectedTags}
             selectedSorts={selectedSorts}
             editable={editable}
@@ -283,30 +507,32 @@ function ProductsGrid({
           />
         );
       })}
-      <div
-        className={
-          editable ? 'hidden' : 'card card-compact card-bordered glass'
-        }
-      >
-        <div className="card-body">
-          <h2 className="text-xl">want to edit your selection?</h2>
-          <p>
-            choose from <strong>{products?.length} meals</strong> matching your
-            health goals, plus many more.
-          </p>
-          <button
-            className="btn btn-block btn-secondary text-xl font-light"
-            onClick={() => {
-              function scrollTo(hash) {
-                location.hash = '#' + hash;
-              }
-              const newUrl = new URL(window.location.href);
-              navigate(newUrl.pathname.replace('/offer', '') + newUrl.search);
-            }}
-          >
-            edit meals
-          </button>
-        </div>
+      <EditCard editable={editable} products={products}></EditCard>
+    </div>
+  );
+}
+
+function EditCard({editable, products}) {
+  const navigate = useNavigate();
+  return (
+    <div
+      className={editable ? 'hidden' : 'card card-compact card-bordered glass'}
+    >
+      <div className="card-body">
+        <h2 className="text-xl">want to edit your selection?</h2>
+        <p>
+          choose from <strong>{products?.length} meals</strong> matching your
+          health goals, plus many more.
+        </p>
+        <button
+          className="btn btn-block btn-secondary text-xl font-light"
+          onClick={() => {
+            const newUrl = new URL(window.location.href);
+            navigate(newUrl.pathname.replace('/offer', '') + newUrl.search);
+          }}
+        >
+          edit meals
+        </button>
       </div>
     </div>
   );
@@ -324,38 +550,56 @@ function ProductItem({
   editable,
   selectedTags,
   selectedSorts,
+  cartLines,
 }) {
   //const variant = product.variants[0];
   const variantUrl = ''; //useVariantUrl(product.handle, variant.selectedOptions);
 
-  const inBasket = product?.variants?.find((variant) => {
-    return variant?.quantity > 0;
-  });
+  const [inBasket, setInBasket] = useState(
+    product?.variants?.find((variant) => {
+      return variant?.quantity > 0;
+    }),
+  );
+  const [quantityInBasket, setQuantityInBasket] = useState(
+    product?.variants?.reduce((total, variant) => {
+      return total + (variant?.quantity || 0);
+    }, 0),
+  );
 
-  const quantityInBasket = product?.variants?.reduce((total, variant) => {
-    return total + (variant?.quantity || 0);
-  }, 0);
+  useEffect(() => {
+    const thisLineInCart = cartLines?.find((line) => {
+      return line?.merchandise?.product.id.includes(product?.id);
+    }) || {quantity: 0};
+    setQuantityInBasket(thisLineInCart?.quantity);
+    setInBasket(thisLineInCart?.quantity > 0);
+  }, [cartLines]);
 
-  const badges = [];
+  const [badges, setBadges] = useState([]);
 
-  product?.matchedTags?.map((tag) => {
-    const tagForBadge = selectedTags?.find((selectedTag) => {
-      return selectedTag?.tag === tag;
+  //loop tags and assign
+
+  useEffect(() => {
+    const badges_ = [];
+    selectedTags?.forEach((tag) => {
+      tag?.hide
+        ? null
+        : product.matchedTags?.includes(tag?.tag)
+        ? badges_.push({title: tag?.title, has: true})
+        : tag.not_rule
+        ? badges_.push({title: 'not ' + tag?.title, has: false})
+        : null;
     });
-    tagForBadge?.hide || tagForBadge == undefined
-      ? null
-      : badges.push(tagForBadge?.title);
-  });
-
-  product?.matchedSorts?.map((sort) => {
-    const sortForBadge = selectedSorts?.find((selectedSort) => {
-      return selectedSort?.tag === sort;
+    selectedSorts?.forEach((sort) => {
+      sort?.hide
+        ? null
+        : product.matchedSorts?.includes(sort?.tag)
+        ? badges_.push({title: sort?.title, has: true})
+        : sort.not_rule
+        ? badges_.push({title: 'not ' + sort?.title, has: false})
+        : null;
     });
-
-    sortForBadge?.hide || sortForBadge == undefined
-      ? null
-      : badges.push(sortForBadge?.title);
-  });
+    setBadges(badges_);
+  }, []);
 
   const hasAvailableVariants = product?.variants?.find((variant) => {
     return variant?.available;
@@ -367,20 +611,20 @@ function ProductItem({
 
   return (
     <>
-      <div
+      <motion.div
+        whileHover={{scale: 1.05}}
+        whileTap={{scale: 0.9}}
         className={
           (inBasket ? 'outline outline-3 outline-accent' : '') +
           ' card card-compact bg-white shadow-lg ' +
           (!editable && !inBasket ? 'hidden' : '')
         }
         key={'gid://shopify/Product/' + product.id}
-        prefetch="intent"
-        to={variantUrl}
       >
         <div className="indicator w-full">
           {inBasket ? (
             <span className="indicator-item indicator-center badge badge-accent">
-              {quantityInBasket} in basket
+              in basket
             </span>
           ) : null}
           {hasAvailableVariants ? null : (
@@ -392,7 +636,7 @@ function ProductItem({
             <Link
               className=""
               preventScrollReset={true}
-              prefetch="viewport"
+              prefetch="none"
               to={modalLink}
             >
               <Image
@@ -414,7 +658,7 @@ function ProductItem({
             prefetch="viewport"
             to={modalLink}
           >
-            <h3 className=" font-light lowercase text-lg">
+            <h3 className="font-light lowercase text-lg h-14">
               {processProductTitle(product.title)}
             </h3>
             <input
@@ -425,7 +669,7 @@ function ProductItem({
             />
           </Link>
           {badges?.map((badge) => {
-            if (badge?.includes('Calorie')) {
+            if (badge?.title.includes('Calorie')) {
               return (
                 <span className="badge badge-neutral">
                   {product?.calories} kcal
@@ -440,10 +684,12 @@ function ProductItem({
             {badges?.map((badge) => {
               return (
                 <div
-                  key={product?.id + badge || 'none'}
-                  className={'tag-pill positive'}
+                  key={product?.id + badge?.title || 'none'}
+                  className={
+                    !badge.has ? 'negative tag-pill' : 'positive tag-pill'
+                  }
                 >
-                  <span className="text-md lowercase">{badge}</span>
+                  <span className="text-md lowercase">{badge?.title}</span>
                 </div>
               );
             })}
@@ -459,7 +705,7 @@ function ProductItem({
         />
 
         {/* <ProductAddButtons product={product} variants={product?.variants} />*/}
-      </div>
+      </motion.div>
     </>
   );
 }
@@ -477,9 +723,17 @@ function ProductAddOrChangeButton({
 
   return inBasket ? (
     <div className={editable ? 'card-body justify-end' : 'hidden'}>
-      <button className="btn btn-neutral shadow-sm btn-outline btn-block text-xl font-light">
-        change{' '}
-      </button>
+      <Link
+        to={modalLink}
+        preventScrollReset={true}
+        prefetch="none"
+        className={
+          (disabled ? 'btn-disabled' : '') +
+          ' btn btn-neutral shadow-sm btn-outline btn-block text-xl font-light'
+        }
+      >
+        change
+      </Link>
     </div>
   ) : (
     <div
@@ -492,7 +746,7 @@ function ProductAddOrChangeButton({
         <Link
           to={modalLink}
           preventScrollReset={true}
-          prefetch="viewport"
+          prefetch="none"
           className={
             (disabled ? 'btn-disabled' : '') +
             ' btn btn-primary shadow-sm text-xl font-light'
@@ -505,16 +759,16 @@ function ProductAddOrChangeButton({
   );
 }
 /* legacy */
-function ProductAddButtons({product, variants}) {
+export function ProductAddButtons({product, variants}) {
   return (
-    <div className="p-4 flex flex-col gap-2">
-      {variants?.map((variant) => {
+    <div className="flex flex-col gap-2">
+      {variants.map((variant) => {
         return (
           <div
             key={variant.id + 'addBtn'}
             className="flex flex-row gap-2 w-full justify-between  align-middle items-center"
           >
-            <span className="text-xs">
+            <span className="lowercase text-md">
               {variant.title} - £{variant?.price}
             </span>
             <VariantAddButton
@@ -581,20 +835,12 @@ function VariantAddButton({variant}) {
           <button
             type="submit"
             className={
-              'btn btn-primary btn-sm rounded-btn  w-20 flex flex-row justify-center align-middle items-center flex-nowrap'
+              (submittingAddToCart ? 'btn-disabled ' : ' ') +
+              'btn btn-primary rounded-btn  w-20 flex flex-row justify-center align-middle items-center flex-nowrap'
             }
           >
-            <span
-              className={
-                submittingAddToCart
-                  ? 'flex flex-col items-center align-middle justify-center'
-                  : 'hidden'
-              }
-            ></span>
-            <span
-              className={submittingAddToCart ? 'hidden' : 'text-xl font-light'}
-            >
-              add
+            <span className={'text-xl font-light'}>
+              {submittingAddToCart ? 'adding' : 'add'}
             </span>
           </button>
         </CartForm>
@@ -616,17 +862,17 @@ function VariantAddButton({variant}) {
         >
           <div className="flex justify-between  align-middle  items-center">
             <button
-              className="btn btn-outline btn-xs text-lg btn-ghost font-light rounded-btn flex items-center disabled:opacity-50 hover:bg-secondary"
+              className="btn text-lg btn-secondary font-light btn-circle  flex items-center disabled:opacity-50 hover:bg-secondary"
               onClick={() => handleQuantityChange('decrement')}
             >
-              <MinusIcon size={'1.2em'} />
+              <MinusIcon size={'1.5em'} />
             </button>
             <p className="font-light text-xl p-2">{quantity}</p>
             <button
-              className="btn btn-outline btn-xs text-lg btn-ghost font-light rounded-btn flex items-center disabled:opacity-50 hover:bg-secondary"
+              className="btn text-lg btn-secondary font-light  btn-circle flex items-center disabled:opacity-50"
               onClick={() => handleQuantityChange('increment')}
             >
-              <AddIcon size={'1.2em'} />
+              <AddIcon size={'2em'} />
             </button>
           </div>
         </CartForm>

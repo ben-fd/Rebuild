@@ -359,8 +359,18 @@ const PRODUCT_FRAGMENT = `#graphql
     title
     vendor
     handle
+    featuredImage {
+      __typename
+      id
+      url
+      altText
+      width
+      height
+    }
     descriptionHtml
     description
+    tags
+    productType
     options {
       name
       values
@@ -368,7 +378,7 @@ const PRODUCT_FRAGMENT = `#graphql
     selectedVariant: variantBySelectedOptions(selectedOptions: $selectedOptions) {
       ...ProductVariant
     }
-    variants(first: 1) {
+    variants(first: 4) {
       nodes {
         ...ProductVariant
       }

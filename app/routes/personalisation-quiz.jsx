@@ -28,6 +28,7 @@ export default function PersonalisationQuiz() {
       </BannerSection>
       <PageContainer>
         <PageContentContainer>
+          {/*<AtomLottie />*/}
           <p>
             It can be hard to find the right meals to feed your health, but
             we're here to help.
@@ -35,18 +36,15 @@ export default function PersonalisationQuiz() {
             This simple quiz will personalise meals to match your health goals.
           </p>
 
-          <div className="flex flex-col gap-4 w-full">
+          <div className="flex flex-col gap-4  w-full max-w-xl">
             <MainButtonLink
               url={
-                '/personalised-plan/offer?tags=diet-Low+FODMAP%2Cdiet-anything&sorts=health-muscles&init=true'
+                '/shop/offer?tags=diet-Low+FODMAP%2Cdiet-anything&sorts=health-muscles&init=true'
               }
             >
               start quiz
             </MainButtonLink>
-            <OutlineButtonLink
-              url={'/personalised-plan?tags=&sorts='}
-              prefetch={false}
-            >
+            <OutlineButtonLink url={'/shop?tags=&sorts='} prefetch={false}>
               skip + see all meals
             </OutlineButtonLink>
           </div>

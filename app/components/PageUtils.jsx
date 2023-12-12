@@ -38,9 +38,14 @@ export function PinkHighlight({children}) {
   );
 }
 
-export function PageContainer({children}) {
+export function PageContainer({children, colour = ''}) {
   return (
-    <section className="flex flex-col justify-center items-center py-0 max-w-[1690px]  m-auto">
+    <section
+      className={
+        colour +
+        'flex flex-col justify-center items-center py-0 max-w-[1690px]  m-auto'
+      }
+    >
       {children}
     </section>
   );
@@ -48,9 +53,26 @@ export function PageContainer({children}) {
 
 export function PageContentContainer({children}) {
   return (
-    <div className="flex flex-col justify-center align-middle items-center gap-16 p-8 max-w-[1690px] lg:col-span-3">
+    <div
+      className={
+        'w-screen md:w-full flex flex-col justify-center align-middle items-center gap-4 p-8 max-w-[1690px] lg:col-span-3'
+      }
+    >
       {children}
     </div>
+  );
+}
+
+export function PageFullBleedContainer({children, colour = 'bg-neutral'}) {
+  return (
+    <section
+      className={
+        colour +
+        ' flex flex-col gap-4 align-middle justify-center items-center w-full'
+      }
+    >
+      {children}
+    </section>
   );
 }
 
@@ -64,9 +86,9 @@ export function AtomLottie() {
         speed="1"
         direction="1"
         intermission="500"
-        hover
+        autoplay
         mode="normal"
-        loop="3"
+        loop
       ></dotlottie-player>
     </div>
   );
@@ -91,6 +113,7 @@ export function OutlineButtonLink({children, url, prefetch}) {
     <Link
       to={url || ''}
       prefetch={prefetch || false}
+      reloadDocument
       className="btn  btn-outline btn-block text-xl font-light"
     >
       {children}
