@@ -293,6 +293,7 @@ function ProductOptions({option}) {
  *   onClick?: () => void;
  * }}
  */
+
 function AddToCartButton({analytics, children, disabled, lines, onClick}) {
   return (
     <CartForm route="/cart" inputs={{lines}} action={CartForm.ACTIONS.LinesAdd}>
