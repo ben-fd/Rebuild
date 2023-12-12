@@ -29,8 +29,6 @@ import {
 
 import {dropIn} from '~/components/animations';
 
-import {motion} from 'framer-motion';
-
 const collections = [
   {
     title: 'all meals',
@@ -611,9 +609,7 @@ function ProductItem({
 
   return (
     <>
-      <motion.div
-        whileHover={{scale: 1.05}}
-        whileTap={{scale: 0.9}}
+      <div
         className={
           (inBasket ? 'outline outline-3 outline-accent' : '') +
           ' card card-compact bg-white shadow-lg ' +
@@ -705,7 +701,7 @@ function ProductItem({
         />
 
         {/* <ProductAddButtons product={product} variants={product?.variants} />*/}
-      </motion.div>
+      </div>
     </>
   );
 }
